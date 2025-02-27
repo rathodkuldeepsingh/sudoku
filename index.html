@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Interactive Sudoku Solver</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      text-align: center;
+      margin: 20px;
+    }
+    table {
+      margin: auto;
+      border-collapse: collapse;
+    }
+    td {
+      border: 1px solid #000;
+      width: 40px;
+      height: 40px;
+      padding: 0;
+    }
+    input {
+      width: 38px;
+      height: 38px;
+      text-align: center;
+      font-size: 18px;
+      border: none;
+    }
+    /* Thicker borders for 3x3 blocks */
+    .thick-top    { border-top: 3px solid #000; }
+    .thick-bottom { border-bottom: 3px solid #000; }
+    .thick-left   { border-left: 3px solid #000; }
+    .thick-right  { border-right: 3px solid #000; }
+    button {
+      margin-top: 20px;
+      padding: 10px 20px;
+      font-size: 16px;
+    }
+    /* Highlight incorrect entries */
+    .error {
+      background-color: #f88;
+    }
+    /* Mark locked cells (initial clues) */
+    .locked {
+      background-color: #ddd;
+    }
+  </style>
+</head>
+<body>
+  <h1>Interactive Sudoku Solver</h1>
+  <table>
+    <tbody>
+      <script>
+        // Generate a 9x9 grid.
+        for (let i = 0; i < 9; i++) {
+          document.write('<tr>');
+          for (let j = 0; j < 9; j++) {
+            let classes = "";
+            if (i % 3 === 0) classes += " thick-top";
+            if (i === 8) classes += " thick-bottom";
+            if (j % 3 === 0) classes += " thick-left";
+            if (j === 8) classes += " thick-right";
+            document.write('<td class="'+classes+'"><input type="text" id="cell-' + i + '-' + j + '" maxlength="1" oninput="this.value=this.value.replace(/[^1-9]/g, \'\')"></td>');
+          }
+          document.write('</tr>');
+        }
+      </script>
+    </tbody>
+  </table>
+  <div id="button-container">
+    <button id="start-btn" onclick="startGame()">Start</button>
+  </div>
+
+  <script>
+    // Global variables to track which cells are locked and to store the solution.
+    let locked = [];
+    let solutionBoard = [];
+
+    // Reads the board from the grid. Empty cells are represented as 0.
+    function getBoard() {
+      const board = [];
+      for (let i = 0; i < 9; i++) {
+        board[i] = [];
+        for (let j = 0; j < 9; j++) {
+          const cellValue = document.getElementById('cell-' + i + '-' + j).value;
+          board[i][j] = cellValue === "" ? 0 : parseInt(cellValue);
+        }
+      }
+      return board;
+    }
+
+    // Updates the grid based on a provided board.
+    function updateBoard(board) {
+      for (let i = 0; i < 9; i++) {
+        for (let j = 0; j < 9; j++) {
+          const cell = document.getElementById('cell-' + i + '-' + j);
+          cell.value = board[i][j] ? board[i][j] : "";
+        }
+      }
+    }
+
+    // Checks if placing 'num' in board[row][col] is valid.
+    function isValid(board, row, col, num) {
+      for (let x = 0; x < 9; x++) {
+        if (board[row][x] === num) return false;
+        if (board[x][col] === num) return false;
+      }
+      const startRow = row - row % 3;
+      const startCol = col - col % 3;
+      for (let i = 0; i < 3; i++) {
+        for (let j = 0; j < 3; j++) {
+          if (board[startRow + i][startCol + j] === num) return false;
+        }
+      }
+      return true;
+    }
+
+    // Standard backtracking solver.
+    function solve(board) {
+      for (let row = 0; row < 9; row++) {
+        for (let col = 0; col < 9; col++) {
+          if (board[row][col] === 0) {
+            for (let num = 1; num <= 9; num++) {
+              if (isValid(board, row, col, num)) {
+                board[row][col] = num;
+                if (solve(board)) return true;
+                board[row][col] = 0;
+              }
+            }
+            return false;
+          }
+        }
+      }
+      return true;
+    }
+
+    // Called when the "Start" button is clicked.
+    function startGame() {
+      const board = getBoard();
+      // Initialize the locked matrix and lock cells that have initial values.
+      for (let i = 0; i < 9; i++) {
+        locked[i] = [];
+        for (let j = 0; j < 9; j++) {
+          locked[i][j] = board[i][j] !== 0;
+          if (locked[i][j]) {
+            const cell = document.getElementById('cell-' + i + '-' + j);
+            cell.disabled = true;
+            cell.classList.add('locked');
+          }
+        }
+      }
+      // Compute the solution based solely on the locked clues.
+      let boardCopy = board.map(row => row.slice());
+      if (!solve(boardCopy)) {
+        alert("No solution exists with the given clues. Please try again.");
+        return;
+      }
+      solutionBoard = boardCopy;
+
+      // Replace the Start button with Solve, Test, and Reset buttons.
+      const btnContainer = document.getElementById('button-container');
+      btnContainer.innerHTML = `
+        <button id="solve-btn" onclick="solveGame()">Solve</button>
+        <button id="test-btn" onclick="testBoard()">Test</button>
+        <button id="reset-btn" onclick="resetBoard()">Reset</button>
+      `;
+    }
+
+    // Compares unlocked cells with the solution and highlights errors.
+    function testBoard() {
+      const board = getBoard();
+      for (let i = 0; i < 9; i++) {
+        for (let j = 0; j < 9; j++) {
+          const cell = document.getElementById('cell-' + i + '-' + j);
+          // Remove previous error highlighting.
+          cell.classList.remove('error');
+          if (!locked[i][j] && cell.value !== "") {
+            if (parseInt(cell.value) !== solutionBoard[i][j]) {
+              cell.classList.add('error');
+            }
+          }
+        }
+      }
+    }
+
+    // Clears all entries from the unlocked cells.
+    function resetBoard() {
+      for (let i = 0; i < 9; i++) {
+        for (let j = 0; j < 9; j++) {
+          if (!locked[i][j]) {
+            const cell = document.getElementById('cell-' + i + '-' + j);
+            cell.value = "";
+            cell.classList.remove('error');
+          }
+        }
+      }
+    }
+
+    // Fills in the solution in the unlocked cells.
+    function solveGame() {
+      for (let i = 0; i < 9; i++) {
+        for (let j = 0; j < 9; j++) {
+          if (!locked[i][j]) {
+            const cell = document.getElementById('cell-' + i + '-' + j);
+            cell.value = solutionBoard[i][j];
+            cell.classList.remove('error');
+          }
+        }
+      }
+    }
+  </script>
+</body>
+</html>
