@@ -51,17 +51,23 @@
 .kpis{display:grid; grid-template-columns:repeat(4,1fr); gap:12px;} @media(max-width:900px){.kpis{grid-template-columns:repeat(2,1fr);} } .kpi{background:#0f1930; border:1px solid var(--border); border-radius:12px; padding:12px} .kpi .label{font-size:12px; color:var(--muted)} .kpi .value{font-size:18px; font-weight:700; margin-top:6px} .kpi.good .value{color:var(--ok)} .kpi.warn .value{color:var(--warn)} .kpi.bad .value{color:var(--danger)}
 
 .twocol{display:grid; grid-template-columns:1fr 1fr; gap:10px} .row{display:grid; grid-template-columns: 1.2fr .8fr; gap:10px; margin-bottom:8px} .row label{display:flex; align-items:center; gap:6px; color:var(--muted)} input[type=number], input[type=text]{ width:100%; box-sizing:border-box; padding:10px 10px; border-radius:10px; border:1px solid var(--border); background:#0a1324; color:var(--text); } input[type=number]::placeholder{color:#5f6d88}
+  .form-field{display:flex; flex-direction:column; gap:6px; margin-top:10px;}
+  .form-field:first-of-type{margin-top:0;}
+  .form-field label{color:var(--muted); font-size:12px;}
+  textarea{width:100%; box-sizing:border-box; padding:10px; border-radius:10px; border:1px solid var(--border); background:#0a1324; color:var(--text); font:inherit; resize:vertical; min-height:72px;}
+  textarea::placeholder{color:#5f6d88;}
 
 table{width:100%; border-collapse:collapse;} thead th{position:sticky; top:0; background:#0a1426; border-bottom:1px solid var(--border); padding:10px; font-size:12px; color:var(--muted); text-align:left} tbody td{border-bottom:1px dashed #1d2b47; padding:8px} tfoot td{border-top:1px solid var(--border); padding:10px; font-weight:700} .actions{display:flex; gap:8px; flex-wrap:wrap} .right{margin-left:auto} .tag{display:inline-block; font-size:11px; padding:2px 8px; border-radius:999px; border:1px solid var(--border); color:var(--muted)} .pill{display:inline-flex; gap:6px; align-items:center; padding:6px 10px; border-radius:999px; background:#0e182b; border:1px solid var(--border); color:var(--muted);} .muted{color:var(--muted)} details{border:1px dashed var(--border); padding:10px; border-radius:12px;} details[open]{background:#0b162c} details summary{cursor:pointer}
 
   .footer-note{color:#7d8dad; font-size:12px; margin-top:14px} .small{font-size:12px} .mono{font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace} .align-right{text-align:right} .nowrap{white-space:nowrap}
 
-  .scenario-grid{display:grid; gap:12px; grid-template-columns:repeat(auto-fit, minmax(260px, 1fr)); margin-top:12px;}
+  .scenario-grid{display:flex; flex-direction:column; gap:12px; margin-top:12px;}
   .scenario-card{display:flex; flex-direction:column; gap:12px;}
   .scenario-card .top{display:flex; justify-content:space-between; align-items:flex-start; gap:12px;}
   .scenario-name{font-size:16px; font-weight:600;}
   .scenario-updated{font-size:12px; color:var(--muted); margin-top:2px;}
-  .scenario-metrics{display:grid; gap:12px; grid-template-columns:repeat(2, minmax(0, 1fr));}
+  .scenario-description{font-size:13px; color:var(--muted); margin:0; line-height:1.5;}
+  .scenario-metrics{display:grid; gap:12px; grid-template-columns:repeat(auto-fit, minmax(160px, 1fr));}
   .scenario-metrics .metric{background:#0f1930; border:1px solid var(--border); border-radius:12px; padding:10px;}
   .scenario-metrics .label{font-size:12px; color:var(--muted);}
   .scenario-metrics .value{font-size:16px; font-weight:700; margin-top:6px;}
@@ -96,15 +102,23 @@ table{width:100%; border-collapse:collapse;} thead th{position:sticky; top:0; ba
   </header>
 
   <main class="container" id="view-dashboard" style="padding-top:10px">
-    <section class="card">
-      <h2>Scenario Overview</h2>
-      <p class="sub">Compare scenarios at a glance. Select a scenario to open detailed inputs and continue editing.</p>
-      <div id="scenario-list" class="scenario-grid"></div>
-      <p class="small muted" id="scenario-empty" hidden>No scenarios yet. Create one to get started.</p>
-    </section>
+    <div id="scenario-list" class="scenario-grid"></div>
+    <p class="small muted" id="scenario-empty" hidden>No scenarios yet. Create one to get started.</p>
   </main>
 
   <main class="container" id="view-detail" style="padding-top:10px">
+    <section class="card" id="scenario-meta">
+      <h2>Scenario Details</h2>
+      <p class="sub">Name and describe this scenario so it's easy to find later.</p>
+      <div class="form-field">
+        <label for="scenario_name">Name</label>
+        <input type="text" id="scenario_name" placeholder="e.g. High demand" maxlength="120">
+      </div>
+      <div class="form-field">
+        <label for="scenario_description">Description</label>
+        <textarea id="scenario_description" placeholder="Add context about the assumptions" maxlength="500"></textarea>
+      </div>
+    </section>
     <section class="card" id="summary">
       <h2>Summary</h2>
       <p class="sub">Tweak inputs on the left. This recalculates <em>throughput, revenue, COGS, energy, salaries,</em> and <em>EBITDA</em> live. Values use Indian locale formatting.</p>
@@ -358,6 +372,8 @@ table{width:100%; border-collapse:collapse;} thead th{position:sticky; top:0; ba
   const pageTitle = qs('#page-title');
   const dashboardList = qs('#scenario-list');
   const dashboardEmpty = qs('#scenario-empty');
+  const scenarioNameInput = qs('#scenario_name');
+  const scenarioDescriptionInput = qs('#scenario_description');
 
   let scenarios = [];
   let currentScenarioId = null;
@@ -541,6 +557,7 @@ table{width:100%; border-collapse:collapse;} thead th{position:sticky; top:0; ba
           return parsed.map(item=>({
             id: item && item.id ? item.id : newId(),
             name: item && item.name ? String(item.name) : 'Scenario',
+            description: item && item.description ? String(item.description) : '',
             state: ensureStateShape(item && item.state),
             createdAt: item && item.createdAt ? item.createdAt : Date.now(),
             updatedAt: item && item.updatedAt ? item.updatedAt : (item && item.createdAt ? item.createdAt : Date.now())
@@ -555,6 +572,7 @@ table{width:100%; border-collapse:collapse;} thead th{position:sticky; top:0; ba
       return [{
         id: newId(),
         name: 'Base Scenario',
+        description: '',
         state: legacy,
         createdAt: ts,
         updatedAt: ts
@@ -564,6 +582,7 @@ table{width:100%; border-collapse:collapse;} thead th{position:sticky; top:0; ba
     return [{
       id: newId(),
       name: 'Base Scenario',
+      description: '',
       state: ensureStateShape(defaultState()),
       createdAt: ts,
       updatedAt: ts
@@ -601,6 +620,8 @@ table{width:100%; border-collapse:collapse;} thead th{position:sticky; top:0; ba
       const out = compute(s.state);
       const card = document.createElement('article');
       card.className = 'scenario-card card';
+      const description = s.description ? `<p class="scenario-description">${escapeHtml(s.description).replace(/\n/g,'<br>')}</p>` : '';
+      const ebitdaClass = out.ebitda >= 0 ? 'positive' : 'negative';
       card.innerHTML = `
         <div class="top">
           <div>
@@ -612,14 +633,23 @@ table{width:100%; border-collapse:collapse;} thead th{position:sticky; top:0; ba
             <button class="btn ghost" data-action="duplicate" data-id="${s.id}">Duplicate</button>
           </div>
         </div>
+        ${description}
         <div class="scenario-metrics">
+          <div class="metric">
+            <div class="label">Throughput (t/month)</div>
+            <div class="value">${NUM.format(out.processed_t)}</div>
+          </div>
+          <div class="metric">
+            <div class="label">Revenue / month</div>
+            <div class="value">${INR.format(out.rev_total)}</div>
+          </div>
           <div class="metric">
             <div class="label">COGS / month</div>
             <div class="value">${INR.format(out.c_total)}</div>
           </div>
           <div class="metric">
             <div class="label">EBITDA / month</div>
-            <div class="value ${out.ebitda >= 0 ? 'positive' : 'negative'}">${INR.format(out.ebitda)}</div>
+            <div class="value ${ebitdaClass}">${INR.format(out.ebitda)}</div>
           </div>
         </div>
       `;
@@ -656,6 +686,7 @@ table{width:100%; border-collapse:collapse;} thead th{position:sticky; top:0; ba
     document.body.dataset.view = 'scenario';
     pageTitle.textContent = `Flour Mill – ${scenario.name}`;
     updateDocumentTitle();
+    setScenarioMeta(scenario);
     setInputs(ensureStateShape(scenario.state));
     markSaved();
     recalc();
@@ -665,6 +696,32 @@ table{width:100%; border-collapse:collapse;} thead th{position:sticky; top:0; ba
     if(!currentScenarioId) return;
     markDirty();
     recalc();
+  };
+
+  const handleScenarioMetaChange = evt =>{
+    if(!currentScenarioId) return;
+    markDirty();
+    const scenario = currentScenario();
+    if(evt && evt.target === scenarioNameInput){
+      const displayName = scenarioNameInput.value.trim() || 'Scenario';
+      pageTitle.textContent = `Flour Mill – ${displayName}`;
+      document.title = `Flour Mill – ${displayName}`;
+      if(scenario){
+        scenario.name = displayName;
+      }
+    }else if(evt && evt.target === scenarioDescriptionInput){
+      if(scenario){
+        scenario.description = scenarioDescriptionInput.value;
+      }
+    }
+  };
+
+  const handleScenarioNameBlur = ()=>{
+    if(!currentScenarioId || !scenarioNameInput) return;
+    if(!scenarioNameInput.value.trim()){
+      scenarioNameInput.value = 'Scenario';
+      handleScenarioMetaChange({ target: scenarioNameInput });
+    }
   };
 
   function machineRow(m){
@@ -773,6 +830,15 @@ table{width:100%; border-collapse:collapse;} thead th{position:sticky; top:0; ba
     (st.staff||[]).forEach(s=> sBody.appendChild(staffRow(s)) );
     fBody.innerHTML='';
     (st.fixed||[]).forEach(f=> fBody.appendChild(fixedRow(f)) );
+  }
+
+  function setScenarioMeta(scenario){
+    if(scenarioNameInput){
+      scenarioNameInput.value = scenario && scenario.name ? scenario.name : 'Scenario';
+    }
+    if(scenarioDescriptionInput){
+      scenarioDescriptionInput.value = scenario && scenario.description ? scenario.description : '';
+    }
   }
 
   function compute(state){
@@ -919,11 +985,24 @@ table{width:100%; border-collapse:collapse;} thead th{position:sticky; top:0; ba
     const state = collectState();
     const out = compute(state);
     render(state, out);
+    const name = scenarioNameInput ? scenarioNameInput.value.trim() : '';
+    const description = scenarioDescriptionInput ? scenarioDescriptionInput.value.trim() : '';
+    const displayName = name || 'Scenario';
+    if(scenarioNameInput){
+      scenarioNameInput.value = displayName;
+    }
+    scenarios[idx].name = displayName;
+    scenarios[idx].description = description;
+    if(scenarioDescriptionInput){
+      scenarioDescriptionInput.value = description;
+    }
     scenarios[idx].state = cloneState(state);
     scenarios[idx].updatedAt = Date.now();
     saveScenarios();
     renderScenarioDashboard();
     updateScenarioTag(out);
+    pageTitle.textContent = `Flour Mill – ${displayName}`;
+    updateDocumentTitle();
     hasUnsavedChanges = false;
     return out;
   }
@@ -933,6 +1012,7 @@ table{width:100%; border-collapse:collapse;} thead th{position:sticky; top:0; ba
     const scenario = {
       id: newId(),
       name: uniqueScenarioName('Scenario'),
+      description: '',
       state: ensureStateShape(defaultState()),
       createdAt: ts,
       updatedAt: ts
@@ -947,10 +1027,16 @@ table{width:100%; border-collapse:collapse;} thead th{position:sticky; top:0; ba
     const base = scenarios.find(s=>s.id === id);
     let sourceState = null;
     let sourceName = base ? base.name : 'Scenario';
+    let sourceDescription = base && base.description ? String(base.description) : '';
     if(currentScenarioId === id){
       sourceState = collectState();
       const current = currentScenario();
       if(current && current.name) sourceName = current.name;
+      if(scenarioDescriptionInput){
+        sourceDescription = scenarioDescriptionInput.value.trim();
+      }else if(current && current.description){
+        sourceDescription = current.description;
+      }
     }else if(base){
       sourceState = cloneState(base.state);
     }
@@ -959,6 +1045,7 @@ table{width:100%; border-collapse:collapse;} thead th{position:sticky; top:0; ba
     const scenario = {
       id: newId(),
       name: uniqueScenarioName(`${sourceName} Copy`),
+      description: sourceDescription,
       state: ensureStateShape(sourceState),
       createdAt: ts,
       updatedAt: ts
@@ -1011,6 +1098,15 @@ table{width:100%; border-collapse:collapse;} thead th{position:sticky; top:0; ba
         duplicateScenario(id);
       }
     });
+  }
+
+  if(scenarioNameInput){
+    scenarioNameInput.addEventListener('input', handleScenarioMetaChange);
+    scenarioNameInput.addEventListener('blur', handleScenarioNameBlur);
+  }
+
+  if(scenarioDescriptionInput){
+    scenarioDescriptionInput.addEventListener('input', handleScenarioMetaChange);
   }
 
   if(btnBack){
