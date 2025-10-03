@@ -73,9 +73,11 @@ table{width:100%; border-collapse:collapse;} thead th{position:sticky; top:0; ba
   .scenario-metrics .value{font-size:16px; font-weight:700; margin-top:6px;}
   .scenario-metrics .value.positive{color:var(--ok);}
   .scenario-metrics .value.negative{color:var(--danger);}
-  .scenario-card .card-actions{display:flex; align-items:flex-start; margin-top:auto; position:relative;}
+  .scenario-card .card-actions{display:flex; align-items:center; gap:8px; margin-top:auto; position:relative;}
   .scenario-card .card-actions button{cursor:pointer;}
   .icon-btn{appearance:none; border:1px solid var(--border); background:#0f1930; color:var(--muted); width:30px; height:30px; border-radius:10px; display:inline-flex; align-items:center; justify-content:center; font-size:18px; line-height:1; transition:.15s ease;}
+  .icon-btn svg{width:16px; height:16px; display:block;}
+  .icon-btn svg path{fill:none; stroke:currentColor; stroke-width:1.8; stroke-linecap:round; stroke-linejoin:round;}
   .icon-btn:hover, .icon-btn[aria-expanded="true"]{border-color:var(--accent); color:var(--accent); box-shadow:0 0 0 3px rgba(124,196,255,.08);}
   .scenario-menu{position:relative;}
   .scenario-menu-list{position:absolute; top:36px; right:0; background:#0f1930; border:1px solid var(--border); border-radius:12px; min-width:160px; display:flex; flex-direction:column; padding:6px 0; box-shadow:0 18px 35px rgba(5,17,34,.45); z-index:20;}
@@ -666,6 +668,7 @@ table{width:100%; border-collapse:collapse;} thead th{position:sticky; top:0; ba
       const out = compute(s.state);
       const card = document.createElement('article');
       card.className = 'scenario-card card';
+      card.dataset.id = s.id;
       const description = s.description ? `<p class="scenario-description">${escapeHtml(s.description).replace(/\n/g,'<br>')}</p>` : '';
       const ebitdaClass = out.ebitda >= 0 ? 'positive' : 'negative';
       card.innerHTML = `
@@ -674,12 +677,19 @@ table{width:100%; border-collapse:collapse;} thead th{position:sticky; top:0; ba
             <div class="scenario-name">${escapeHtml(s.name)}</div>
             <div class="scenario-updated">Updated ${escapeHtml(formatUpdated(s.updatedAt))}</div>
           </div>
-          <div class="card-actions scenario-menu">
-            <button class="icon-btn" aria-haspopup="true" aria-expanded="false" aria-label="Scenario actions" data-menu-toggle data-id="${s.id}">⋮</button>
-            <div class="scenario-menu-list" hidden>
-              <button data-menu-action="duplicate" data-id="${s.id}">Duplicate</button>
-              <button data-menu-action="export" data-id="${s.id}">Download CSV</button>
-              <button class="danger" data-menu-action="delete" data-id="${s.id}">Delete</button>
+          <div class="card-actions">
+            <button class="icon-btn open-scenario-btn" type="button" aria-label="Open ${escapeHtml(s.name)}">
+              <svg viewBox="0 0 16 16" aria-hidden="true" focusable="false">
+                <path d="M6 3l5 5-5 5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" />
+              </svg>
+            </button>
+            <div class="scenario-menu">
+              <button class="icon-btn" aria-haspopup="true" aria-expanded="false" aria-label="Scenario actions" data-menu-toggle data-id="${s.id}">⋮</button>
+              <div class="scenario-menu-list" hidden>
+                <button data-menu-action="duplicate" data-id="${s.id}">Duplicate</button>
+                <button data-menu-action="export" data-id="${s.id}">Download CSV</button>
+                <button class="danger" data-menu-action="delete" data-id="${s.id}">Delete</button>
+              </div>
             </div>
           </div>
         </div>
