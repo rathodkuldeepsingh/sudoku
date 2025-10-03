@@ -62,9 +62,7 @@ table{width:100%; border-collapse:collapse;} thead th{position:sticky; top:0; ba
   .footer-note{color:#7d8dad; font-size:12px; margin-top:14px} .small{font-size:12px} .mono{font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace} .align-right{text-align:right} .nowrap{white-space:nowrap}
 
   .scenario-grid{display:flex; flex-direction:column; gap:12px; margin-top:12px;}
-  .scenario-card{display:flex; flex-direction:column; gap:12px; cursor:pointer; transition:border-color .15s ease, box-shadow .15s ease;}
-  .scenario-card:hover{border-color:var(--accent); box-shadow:0 0 0 3px rgba(124,196,255,.08);}
-  .scenario-card:focus-visible{outline:2px solid var(--accent); outline-offset:2px;}
+  .scenario-card{display:flex; flex-direction:column; gap:12px;}
   .scenario-card .top{display:flex; justify-content:space-between; align-items:flex-start; gap:12px;}
   .scenario-name{font-size:16px; font-weight:600;}
   .scenario-updated{font-size:12px; color:var(--muted); margin-top:2px;}
@@ -668,10 +666,6 @@ table{width:100%; border-collapse:collapse;} thead th{position:sticky; top:0; ba
       const out = compute(s.state);
       const card = document.createElement('article');
       card.className = 'scenario-card card';
-      card.dataset.id = s.id;
-      card.tabIndex = 0;
-      card.setAttribute('role', 'button');
-      card.setAttribute('aria-label', `Open ${s.name}`);
       const description = s.description ? `<p class="scenario-description">${escapeHtml(s.description).replace(/\n/g,'<br>')}</p>` : '';
       const ebitdaClass = out.ebitda >= 0 ? 'positive' : 'negative';
       card.innerHTML = `
@@ -709,20 +703,6 @@ table{width:100%; border-collapse:collapse;} thead th{position:sticky; top:0; ba
           </div>
         </div>
       `;
-      card.addEventListener('click', evt=>{
-        if(evt.defaultPrevented) return;
-        if(evt.target.closest('.scenario-menu')) return;
-        closeAllScenarioMenus();
-        openScenario(s.id);
-      });
-      card.addEventListener('keydown', evt=>{
-        if(evt.target.closest('.scenario-menu')) return;
-        if(evt.key === 'Enter' || evt.key === ' '){
-          evt.preventDefault();
-          closeAllScenarioMenus();
-          openScenario(s.id);
-        }
-      });
       dashboardList.appendChild(card);
     });
   }
@@ -1217,14 +1197,16 @@ table{width:100%; border-collapse:collapse;} thead th{position:sticky; top:0; ba
         return;
       }
 
+      const card = evt.target.closest('.scenario-card');
+      if(card && !evt.target.closest('.scenario-menu')){
+        const id = card.dataset.id;
+        if(id){
+          openScenario(id);
+        }
+      }
+
     });
   }
-
-  document.addEventListener('click', evt=>{
-    if(!evt.target.closest('.scenario-menu')){
-      closeAllScenarioMenus();
-    }
-  });
 
   if(scenarioNameInput){
     scenarioNameInput.addEventListener('input', handleScenarioMetaChange);
