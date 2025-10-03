@@ -1,0 +1,661 @@
+
+<!DOCTYPE html><html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Flour Mill Monthly Finance Calculator</title>
+<style>
+  :root{
+    --bg:#0b1220;
+    --card:#111a2b;
+    --muted:#8ea2c6;
+    --text:#e8f0ff;
+    --accent:#7cc4ff;
+    --accent-2:#8fffcc;
+    --danger:#ff7c7c;
+    --ok:#7cff9a;
+    --warn:#ffd37c;
+    --border:#24314a;
+  }
+  html,body{height:100%;}
+  body{
+    margin:0; background:var(--bg); color:var(--text);
+    font:14px/1.35 system-ui,-apple-system,Segoe UI,Roboto,Inter,Ubuntu,Helvetica,Arial,sans-serif;
+  }
+  header{
+    position:sticky; top:0; z-index:5; backdrop-filter:saturate(120%) blur(6px);
+    background:linear-gradient(180deg, rgba(17,26,43,.95), rgba(17,26,43,.75));
+    border-bottom:1px solid var(--border);
+  }
+  .container{max-width:1200px; margin:0 auto; padding:16px;}
+  .titlebar{display:flex; align-items:center; gap:12px; justify-content:space-between;}
+  h1{font-size:20px; margin:8px 0;}
+  .btn{appearance:none; border:1px solid var(--border); background:transparent; color:var(--text);
+       padding:8px 12px; border-radius:10px; cursor:pointer; transition:.15s ease;}
+  .btn:hover{border-color:var(--accent); box-shadow:0 0 0 3px rgba(124,196,255,.15);} 
+  .btn.primary{background:linear-gradient(90deg, var(--accent), #58a8ff); color:#05233f; font-weight:600;}
+  .btn.ghost{opacity:.85}
+  .btn.danger{border-color:#512; color:#ffb1b1}
+  .grid{display:grid; grid-template-columns: 1.1fr .9fr; gap:16px;}
+  @media (max-width: 980px){ .grid{grid-template-columns:1fr;} }.card{background:var(--card); border:1px solid var(--border); border-radius:14px; padding:16px;} .card h2{font-size:16px; margin:0 0 8px;} .sub{color:var(--muted); font-size:12px; margin-bottom:12px}
+
+.kpis{display:grid; grid-template-columns:repeat(4,1fr); gap:12px;} @media(max-width:900px){.kpis{grid-template-columns:repeat(2,1fr);} } .kpi{background:#0f1930; border:1px solid var(--border); border-radius:12px; padding:12px} .kpi .label{font-size:12px; color:var(--muted)} .kpi .value{font-size:18px; font-weight:700; margin-top:6px} .kpi.good .value{color:var(--ok)} .kpi.warn .value{color:var(--warn)} .kpi.bad .value{color:var(--danger)}
+
+.twocol{display:grid; grid-template-columns:1fr 1fr; gap:10px} .row{display:grid; grid-template-columns: 1.2fr .8fr; gap:10px; margin-bottom:8px} .row label{display:flex; align-items:center; gap:6px; color:var(--muted)} input[type=number], input[type=text]{ width:100%; box-sizing:border-box; padding:10px 10px; border-radius:10px; border:1px solid var(--border); background:#0a1324; color:var(--text); } input[type=number]::placeholder{color:#5f6d88}
+
+table{width:100%; border-collapse:collapse;} thead th{position:sticky; top:0; background:#0a1426; border-bottom:1px solid var(--border); padding:10px; font-size:12px; color:var(--muted); text-align:left} tbody td{border-bottom:1px dashed #1d2b47; padding:8px} tfoot td{border-top:1px solid var(--border); padding:10px; font-weight:700} .actions{display:flex; gap:8px; flex-wrap:wrap} .right{margin-left:auto} .tag{display:inline-block; font-size:11px; padding:2px 8px; border-radius:999px; border:1px solid var(--border); color:var(--muted)} .pill{display:inline-flex; gap:6px; align-items:center; padding:6px 10px; border-radius:999px; background:#0e182b; border:1px solid var(--border); color:var(--muted);} .muted{color:var(--muted)} details{border:1px dashed var(--border); padding:10px; border-radius:12px;} details[open]{background:#0b162c} details summary{cursor:pointer}
+
+.footer-note{color:#7d8dad; font-size:12px; margin-top:14px} .small{font-size:12px} .mono{font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace} .align-right{text-align:right} .nowrap{white-space:nowrap}
+
+</style>
+</head>
+<body>
+  <header>
+    <div class="container titlebar">
+      <div style="display:flex; align-items:center; gap:12px; flex-wrap:wrap">
+        <h1>Flour Mill – Monthly Finance Calculator</h1>
+        <span class="tag">25 TPD (fully editable)</span>
+      </div>
+      <div class="actions">
+        <button class="btn ghost" id="btn-export">Export Summary CSV</button>
+        <button class="btn ghost" id="btn-save">Save</button>
+        <button class="btn danger" id="btn-reset">Reset Defaults</button>
+      </div>
+    </div>
+  </header>  <main class="container" style="padding-top:10px">
+    <section class="card" id="summary">
+      <h2>Summary</h2>
+      <p class="sub">Tweak inputs on the left. This recalculates <em>throughput, revenue, COGS, energy, salaries,</em> and <em>EBITDA</em> live. Values use Indian locale formatting.</p>
+      <div class="kpis">
+        <div class="kpi"><div class="label">Throughput (t/month)</div><div class="value" id="kpi-throughput">–</div></div>
+        <div class="kpi"><div class="label">Revenue / month</div><div class="value" id="kpi-revenue">–</div></div>
+        <div class="kpi"><div class="label">COGS (incl. power & packaging)</div><div class="value" id="kpi-cogs">–</div></div>
+        <div class="kpi"><div class="label">Gross Margin</div><div class="value" id="kpi-gm">–</div></div>
+        <div class="kpi"><div class="label">Opex (salaries + fixed)</div><div class="value" id="kpi-opex">–</div></div>
+        <div class="kpi"><div class="label">EBITDA / month</div><div class="value" id="kpi-ebitda">–</div></div>
+        <div class="kpi"><div class="label">GM / kg flour</div><div class="value" id="kpi-gmkg">–</div></div>
+        <div class="kpi"><div class="label">Break-even flour price (₹/kg)</div><div class="value" id="kpi-breakeven">–</div></div>
+      </div>
+    </section><div class="grid" style="margin-top:16px">
+  <!-- LEFT: INPUTS -->
+  <section class="card">
+    <h2>Inputs</h2>
+    <p class="sub">Change anything below. Add or remove rows for machines, staff and fixed costs. All numbers are monthly unless noted.</p>
+
+    <div class="twocol">
+      <div>
+        <div class="row"><label>Capacity (t/day)</label><input type="number" id="cap_tpd" step="0.1" value="25"></div>
+        <div class="row"><label>Operating days / month</label><input type="number" id="op_days" step="1" value="25"></div>
+        <div class="row"><label>Hours per day (for defaults)</label><input type="number" id="hours_per_day" step="1" value="16"></div>
+        <div class="row"><label>Utilization (%)</label><input type="number" id="util_pct" step="0.1" value="90"></div>
+      </div>
+      <div>
+        <div class="row"><label>Extraction to Flour (%)</label><input type="number" id="extraction_pct" step="0.1" value="72"></div>
+        <div class="row"><label>Flour price (₹/kg)</label><input type="number" id="flour_price" step="0.1" value="32"></div>
+        <div class="row"><label>Bran price (₹/kg)</label><input type="number" id="bran_price" step="0.1" value="16"></div>
+        <div class="row"><label>Packaging (₹/kg flour)</label><input type="number" id="pack_cost_perkg" step="0.1" value="0.8"></div>
+      </div>
+    </div>
+
+    <details style="margin-top:10px"><summary><strong>Raw Material & Variable Costs</strong></summary>
+      <div class="twocol" style="margin-top:10px">
+        <div>
+          <div class="row"><label>Wheat price (₹/ton)</label><input type="number" id="wheat_price_ton" step="10" value="26000"></div>
+          <div class="row"><label>Other variable cost (₹/ton processed)</label><input type="number" id="var_cost_ton" step="1" value="200"></div>
+        </div>
+        <div>
+          <div class="row"><label>Power tariff (₹/kWh)</label><input type="number" id="power_tariff" step="0.1" value="7.5"></div>
+          <div class="row"><label>Contract demand (kVA)</label><input type="number" id="contract_kva" step="1" value="150"></div>
+          <div class="row"><label>Demand charge (₹/kVA·mo)</label><input type="number" id="demand_rate" step="1" value="350"></div>
+        </div>
+      </div>
+      <p class="small muted">Note: Extraction% + bran/by-product share is assumed to be 100%. We treat bran share as (100 − extraction%). Adjust selling prices above.</p>
+    </details>
+
+    <!-- Machines table -->
+    <div class="card" style="margin-top:14px">
+      <div style="display:flex; align-items:center; gap:8px; margin-bottom:8px">
+        <h3 style="margin:0">Machines & Energy</h3>
+        <span class="pill small">Enter rated kW, load factor (%), and hours/month per machine</span>
+        <span class="right"></span>
+        <button class="btn" id="btn-default-hours">Fill default hours</button>
+        <button class="btn" id="add-machine">Add Machine</button>
+      </div>
+      <div class="sub">Energy cost = kW × Load% × Hours × Tariff. Demand charges are added separately from inputs.</div>
+      <div style="max-height:300px; overflow:auto; border:1px solid var(--border); border-radius:12px">
+        <table id="tbl-machines">
+          <thead>
+            <tr>
+              <th>Machine</th>
+              <th class="nowrap">Rated kW</th>
+              <th>Load %</th>
+              <th>Hours/mo</th>
+              <th class="align-right">kWh</th>
+              <th class="align-right">Energy ₹</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+          <tfoot>
+            <tr>
+              <td colspan="4">Total</td>
+              <td class="align-right" id="m_total_kwh">0</td>
+              <td class="align-right" id="m_total_cost">₹0</td>
+              <td></td>
+            </tr>
+          </tfoot>
+        </table>
+      </div>
+    </div>
+
+    <!-- Salaries table -->
+    <div class="card" style="margin-top:14px">
+      <div style="display:flex; align-items:center; gap:8px; margin-bottom:8px">
+        <h3 style="margin:0">Salaries & Wages</h3>
+        <span class="pill small">Monthly per head × Headcount</span>
+        <span class="right"></span>
+        <button class="btn" id="add-staff">Add Role</button>
+      </div>
+      <div style="max-height:300px; overflow:auto; border:1px solid var(--border); border-radius:12px">
+        <table id="tbl-staff">
+          <thead>
+            <tr>
+              <th>Role</th>
+              <th>Headcount</th>
+              <th class="align-right">₹ / head / mo</th>
+              <th class="align-right">Total ₹</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+          <tfoot>
+            <tr>
+              <td colspan="3">Total Salaries</td>
+              <td class="align-right" id="s_total">₹0</td>
+              <td></td>
+            </tr>
+          </tfoot>
+        </table>
+      </div>
+    </div>
+
+    <!-- Fixed Monthly Costs -->
+    <div class="card" style="margin-top:14px">
+      <div style="display:flex; align-items:center; gap:8px; margin-bottom:8px">
+        <h3 style="margin:0">Fixed Monthly Costs</h3>
+        <span class="pill small">Security, insurance, housekeeping, IT/ERP, professional fees, marketing, etc.</span>
+        <span class="right"></span>
+        <button class="btn" id="add-fixed">Add Item</button>
+      </div>
+      <div style="max-height:300px; overflow:auto; border:1px solid var(--border); border-radius:12px">
+        <table id="tbl-fixed">
+          <thead>
+            <tr>
+              <th>Item</th>
+              <th class="align-right">₹ / month</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+          <tfoot>
+            <tr>
+              <td>Total Fixed</td>
+              <td class="align-right" id="f_total">₹0</td>
+              <td></td>
+            </tr>
+            <tr>
+              <td>+ Demand Charges (auto from inputs)</td>
+              <td class="align-right" id="f_demand">₹0</td>
+              <td></td>
+            </tr>
+          </tfoot>
+        </table>
+      </div>
+      <div class="footer-note">Tip: Add loan EMI here if applicable.</div>
+    </div>
+
+  </section>
+
+  <!-- RIGHT: RESULTS & DETAIL -->
+  <section class="card">
+    <h2>Results</h2>
+    <p class="sub">Unit economics are based on flour output only (bran is treated as a by‑product credit in revenue).</p>
+
+    <div class="row"><label>Processed (t/month)</label><input id="out_proc_t" type="text" class="mono" readonly></div>
+    <div class="row"><label>Flour output (t/month)</label><input id="out_flour_t" type="text" class="mono" readonly></div>
+    <div class="row"><label>Bran output (t/month)</label><input id="out_bran_t" type="text" class="mono" readonly></div>
+
+    <hr style="border:0; border-top:1px solid var(--border); margin:14px 0">
+
+    <h3>Revenue</h3>
+    <div class="row"><label>Flour revenue</label><input id="rev_flour" type="text" class="mono" readonly></div>
+    <div class="row"><label>Bran revenue</label><input id="rev_bran" type="text" class="mono" readonly></div>
+    <div class="row"><label><strong>Total revenue</strong></label><input id="rev_total" type="text" class="mono" readonly></div>
+
+    <h3 style="margin-top:10px">COGS (Variable)</h3>
+    <div class="row"><label>Wheat cost</label><input id="c_wheat" type="text" class="mono" readonly></div>
+    <div class="row"><label>Packaging</label><input id="c_pack" type="text" class="mono" readonly></div>
+    <div class="row"><label>Energy (machines)</label><input id="c_energy" type="text" class="mono" readonly></div>
+    <div class="row"><label>Other variable</label><input id="c_var" type="text" class="mono" readonly></div>
+    <div class="row"><label><strong>Total COGS</strong></label><input id="c_total" type="text" class="mono" readonly></div>
+
+    <h3 style="margin-top:10px">Operating Expenses (Fixed)</h3>
+    <div class="row"><label>Salaries & wages</label><input id="o_salaries" type="text" class="mono" readonly></div>
+    <div class="row"><label>Fixed monthly costs</label><input id="o_fixed" type="text" class="mono" readonly></div>
+    <div class="row"><label>Demand charges</label><input id="o_demand" type="text" class="mono" readonly></div>
+    <div class="row"><label><strong>Total Opex</strong></label><input id="o_total" type="text" class="mono" readonly></div>
+
+    <hr style="border:0; border-top:1px solid var(--border); margin:14px 0">
+    <div class="row"><label><strong>Gross Margin</strong></label><input id="gm" type="text" class="mono" readonly></div>
+    <div class="row"><label><strong>EBITDA</strong></label><input id="ebitda" type="text" class="mono" readonly></div>
+    <div class="row"><label>GM / kg flour</label><input id="gm_perkg" type="text" class="mono" readonly></div>
+    <div class="row"><label>EBITDA / kg flour</label><input id="ebitda_perkg" type="text" class="mono" readonly></div>
+    <div class="row"><label>Break-even flour price (₹/kg)</label><input id="breakeven_price" type="text" class="mono" readonly></div>
+
+    <details style="margin-top:12px"><summary><strong>Sensitivity (quick what‑ifs)</strong></summary>
+      <div class="row"><label>± Wheat price (%)</label><input type="number" id="s_wheat_pct" value="10" step="1"></div>
+      <div class="row"><label>± Flour price (%)</label><input type="number" id="s_flour_pct" value="10" step="1"></div>
+      <div class="twocol">
+        <div class="card">
+          <div class="small muted">EBITDA with wheat price –X%</div>
+          <div class="kpi" style="margin-top:8px"><div class="value" id="sens_wheat_minus">–</div></div>
+        </div>
+        <div class="card">
+          <div class="small muted">EBITDA with wheat price +X%</div>
+          <div class="kpi" style="margin-top:8px"><div class="value" id="sens_wheat_plus">–</div></div>
+        </div>
+      </div>
+      <div class="twocol">
+        <div class="card">
+          <div class="small muted">EBITDA with flour price –X%</div>
+          <div class="kpi" style="margin-top:8px"><div class="value" id="sens_flour_minus">–</div></div>
+        </div>
+        <div class="card">
+          <div class="small muted">EBITDA with flour price +X%</div>
+          <div class="kpi" style="margin-top:8px"><div class="value" id="sens_flour_plus">–</div></div>
+        </div>
+      </div>
+    </details>
+
+    <p class="footer-note">Assumptions: All outputs are monthly. Energy cost excludes open‑access surcharges/penalties. This is a planning tool, not audited financial advice.</p>
+  </section>
+</div>
+
+  </main><script>
+(function(){
+  /** Utilities **/
+  const INR = new Intl.NumberFormat('en-IN', { style:'currency', currency:'INR', maximumFractionDigits:0 });
+  const NUM = new Intl.NumberFormat('en-IN', { maximumFractionDigits:2 });
+  const qs = s => document.querySelector(s);
+  const qsa = s => Array.from(document.querySelectorAll(s));
+  const px = v => isFinite(+v) ? +v : 0;
+
+  function saveState(){
+    const state = collectState();
+    localStorage.setItem('fm_calc_state_v1', JSON.stringify(state));
+  }
+  function loadState(){
+    const raw = localStorage.getItem('fm_calc_state_v1');
+    if(!raw) return null;
+    try{ return JSON.parse(raw); }catch(e){ return null; }
+  }
+
+  function defaultState(){
+    return {
+      cap_tpd:25, op_days:25, hours_per_day:16, util_pct:90,
+      extraction_pct:72, flour_price:32, bran_price:16, pack_cost_perkg:0.8,
+      wheat_price_ton:26000, var_cost_ton:200,
+      power_tariff:7.5, contract_kva:150, demand_rate:350,
+      machines:[
+        {name:'Pre-cleaner', kw:7.5, load:80, hours:400},
+        {name:'Destoner', kw:5, load:80, hours:400},
+        {name:'Elevators & Conveyors', kw:10, load:70, hours:400},
+        {name:'Chakki/ROLLER – Set 1', kw:25, load:85, hours:400},
+        {name:'Chakki/ROLLER – Set 2', kw:25, load:85, hours:400},
+        {name:'Plansifter', kw:3, load:70, hours:400},
+        {name:'Dust Collector/Bag Filter', kw:7, load:80, hours:400},
+        {name:'Air Compressor', kw:15, load:60, hours:250},
+        {name:'Bagging & Stitching', kw:2, load:60, hours:200},
+      ],
+      staff:[
+        {role:'Plant Manager', head:1, salary:32000},
+        {role:'Shift Supervisors', head:2, salary:24000},
+        {role:'Millers/Operators', head:6, salary:18000},
+        {role:'Quality & Lab Tech', head:1, salary:22000},
+        {role:'Electrician', head:1, salary:23000},
+        {role:'Fitter/Mechanic', head:1, salary:20000},
+        {role:'Helpers/Loaders', head:10, salary:14000},
+        {role:'Store/Weighbridge', head:1, salary:18000},
+        {role:'Accounts/Admin', head:1, salary:23000},
+        {role:'Security Guards', head:2, salary:15000},
+        {role:'Sales/Dispatch', head:1, salary:23000},
+      ],
+      fixed:[
+        {item:'Security services', amt:45000},
+        {item:'Housekeeping & canteen', amt:25000},
+        {item:'IT/ERP, Internet', amt:10000},
+        {item:'Insurance (avg monthly)', amt:29167},
+        {item:'Compliance & testing (avg monthly)', amt:16667},
+        {item:'Local transport/dispatch', amt:100000},
+        {item:'Marketing & trade', amt:50000},
+        {item:'Professional fees', amt:12500},
+      ]
+    }
+  }
+
+  /** Build dynamic tables **/
+  const mBody = qs('#tbl-machines tbody');
+  const sBody = qs('#tbl-staff tbody');
+  const fBody = qs('#tbl-fixed tbody');
+
+  function machineRow(m){
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td><input type="text" value="${m.name||''}"></td>
+      <td><input type="number" step="0.1" value="${m.kw||0}"></td>
+      <td><input type="number" step="1" value="${m.load||0}"></td>
+      <td><input type="number" step="1" value="${m.hours||0}"></td>
+      <td class="align-right mono">0</td>
+      <td class="align-right mono">₹0</td>
+      <td><button class="btn ghost btn-del">✕</button></td>
+    `;
+    attachRowEvents(tr, recalc);
+    return tr;
+  }
+  function staffRow(s){
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td><input type="text" value="${s.role||''}"></td>
+      <td><input type="number" step="1" value="${s.head||0}"></td>
+      <td class="align-right"><input type="number" step="100" value="${s.salary||0}"></td>
+      <td class="align-right mono">₹0</td>
+      <td><button class="btn ghost btn-del">✕</button></td>
+    `;
+    attachRowEvents(tr, recalc);
+    return tr;
+  }
+  function fixedRow(f){
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td><input type="text" value="${f.item||''}"></td>
+      <td class="align-right"><input type="number" step="100" value="${f.amt||0}"></td>
+      <td><button class="btn ghost btn-del">✕</button></td>
+    `;
+    attachRowEvents(tr, recalc);
+    return tr;
+  }
+
+  function attachRowEvents(tr, onChange){
+    tr.querySelectorAll('input').forEach(el=>{
+      el.addEventListener('input', onChange);
+    })
+    const del = tr.querySelector('.btn-del');
+    if(del){ del.addEventListener('click', ()=>{ tr.remove(); recalc(); }); }
+  }
+
+  /** Collect & compute **/
+  function collectState(){
+    const state = {
+      cap_tpd: px(qs('#cap_tpd').value),
+      op_days: px(qs('#op_days').value),
+      hours_per_day: px(qs('#hours_per_day').value),
+      util_pct: px(qs('#util_pct').value),
+      extraction_pct: px(qs('#extraction_pct').value),
+      flour_price: px(qs('#flour_price').value),
+      bran_price: px(qs('#bran_price').value),
+      pack_cost_perkg: px(qs('#pack_cost_perkg').value),
+      wheat_price_ton: px(qs('#wheat_price_ton').value),
+      var_cost_ton: px(qs('#var_cost_ton').value),
+      power_tariff: px(qs('#power_tariff').value),
+      contract_kva: px(qs('#contract_kva').value),
+      demand_rate: px(qs('#demand_rate').value),
+      machines: [], staff: [], fixed: []
+    };
+    mBody.querySelectorAll('tr').forEach(tr=>{
+      const tds = tr.querySelectorAll('td');
+      state.machines.push({
+        name: tds[0].querySelector('input').value,
+        kw: px(tds[1].querySelector('input').value),
+        load: px(tds[2].querySelector('input').value),
+        hours: px(tds[3].querySelector('input').value)
+      })
+    })
+    sBody.querySelectorAll('tr').forEach(tr=>{
+      const tds = tr.querySelectorAll('td');
+      state.staff.push({
+        role: tds[0].querySelector('input').value,
+        head: px(tds[1].querySelector('input').value),
+        salary: px(tds[2].querySelector('input').value)
+      })
+    })
+    fBody.querySelectorAll('tr').forEach(tr=>{
+      const tds = tr.querySelectorAll('td');
+      state.fixed.push({ item: tds[0].querySelector('input').value, amt: px(tds[1].querySelector('input').value) })
+    })
+    return state;
+  }
+
+  function setInputs(state){
+    qs('#cap_tpd').value = state.cap_tpd; qs('#op_days').value = state.op_days; qs('#hours_per_day').value = state.hours_per_day; qs('#util_pct').value = state.util_pct;
+    qs('#extraction_pct').value = state.extraction_pct; qs('#flour_price').value = state.flour_price; qs('#bran_price').value = state.bran_price; qs('#pack_cost_perkg').value = state.pack_cost_perkg;
+    qs('#wheat_price_ton').value = state.wheat_price_ton; qs('#var_cost_ton').value = state.var_cost_ton; qs('#power_tariff').value = state.power_tariff; qs('#contract_kva').value = state.contract_kva; qs('#demand_rate').value = state.demand_rate;
+
+    mBody.innerHTML='';
+    (state.machines||[]).forEach(m=> mBody.appendChild(machineRow(m)) );
+    sBody.innerHTML='';
+    (state.staff||[]).forEach(s=> sBody.appendChild(staffRow(s)) );
+    fBody.innerHTML='';
+    (state.fixed||[]).forEach(f=> fBody.appendChild(fixedRow(f)) );
+  }
+
+  function compute(state){
+    // Throughput
+    const processed_t = state.cap_tpd * state.op_days * (state.util_pct/100);
+    const flour_t = processed_t * (state.extraction_pct/100);
+    const bran_t = Math.max(processed_t - flour_t, 0);
+
+    // Revenue
+    const rev_flour = flour_t * 1000 * state.flour_price;
+    const rev_bran  = bran_t  * 1000 * state.bran_price;
+    const rev_total = rev_flour + rev_bran;
+
+    // COGS – wheat + packaging + energy + variable
+    const c_wheat = processed_t * state.wheat_price_ton;
+    const c_pack  = flour_t * 1000 * state.pack_cost_perkg;
+
+    // Energy – machines
+    let m_kwh_total = 0, m_cost_total = 0;
+    state.machines.forEach(m=>{
+      const kwh = m.kw * (m.load/100) * m.hours;
+      const cost = kwh * state.power_tariff;
+      m_kwh_total += kwh; m_cost_total += cost;
+    })
+
+    const c_var = processed_t * state.var_cost_ton;
+    const c_total = c_wheat + c_pack + m_cost_total + c_var;
+
+    // Opex – salaries + fixed + demand
+    let s_total = 0; state.staff.forEach(s=> s_total += s.head * s.salary);
+    let f_total = 0; state.fixed.forEach(f=> f_total += f.amt);
+    const demand = state.contract_kva * state.demand_rate;
+    const o_total = s_total + f_total + demand;
+
+    // Margins
+    const gm = rev_total - c_total;
+    const ebitda = gm - o_total;
+
+    // Per kg (flour only)
+    const flour_kg = flour_t * 1000;
+    const gm_perkg = flour_kg ? gm / flour_kg : 0;
+    const ebitda_perkg = flour_kg ? ebitda / flour_kg : 0;
+
+    // Break-even flour price (holding other vars constant)
+    // ebitda = revenue - cogs - opex = 0
+    // revenue = P_f * flour_kg + rev_bran
+    // cogs    = c_wheat + (pack_perkg*flour_kg) + energy + var
+    // Solve for P_f:
+    // 0 = (P_f*flour_kg + rev_bran) - [c_wheat + pack*flour_kg + energy + var] - opex
+    // => P_f = { c_wheat + energy + var + opex - rev_bran } / flour_kg + pack
+    let break_even = 0;
+    if(flour_kg>0){
+      break_even = ( (c_wheat + m_cost_total + c_var + o_total - rev_bran) / flour_kg ) + state.pack_cost_perkg;
+    }
+
+    return {
+      processed_t, flour_t, bran_t,
+      rev_flour, rev_bran, rev_total,
+      c_wheat, c_pack, c_energy:m_cost_total, c_var, c_total,
+      s_total, f_total, demand, o_total,
+      gm, ebitda, gm_perkg, ebitda_perkg, break_even,
+      m_kwh_total, m_cost_total
+    }
+  }
+
+  function render(state, out){
+    // KPIs
+    qs('#kpi-throughput').textContent = NUM.format(out.processed_t);
+    qs('#kpi-revenue').textContent = INR.format(out.rev_total);
+    qs('#kpi-cogs').textContent = INR.format(out.c_total);
+    qs('#kpi-gm').textContent = INR.format(out.gm);
+    qs('#kpi-opex').textContent = INR.format(out.o_total);
+    const e = qs('#kpi-ebitda'); e.textContent = INR.format(out.ebitda);
+    e.parentElement.parentElement.classList.remove('good','bad','warn');
+    e.parentElement.parentElement.classList.add(out.ebitda>0?'good':(out.ebitda<0?'bad':'warn'));
+    qs('#kpi-gmkg').textContent = `₹ ${NUM.format(out.gm_perkg)}`;
+    qs('#kpi-breakeven').textContent = `₹ ${NUM.format(out.break_even)}`;
+
+    // Results panel
+    qs('#out_proc_t').value = NUM.format(out.processed_t);
+    qs('#out_flour_t').value = NUM.format(out.flour_t);
+    qs('#out_bran_t').value  = NUM.format(out.bran_t);
+
+    qs('#rev_flour').value = INR.format(out.rev_flour);
+    qs('#rev_bran').value  = INR.format(out.rev_bran);
+    qs('#rev_total').value = INR.format(out.rev_total);
+
+    qs('#c_wheat').value = INR.format(out.c_wheat);
+    qs('#c_pack').value  = INR.format(out.c_pack);
+    qs('#c_energy').value= INR.format(out.c_energy);
+    qs('#c_var').value   = INR.format(out.c_var);
+    qs('#c_total').value = INR.format(out.c_total);
+
+    qs('#o_salaries').value = INR.format(out.s_total);
+    qs('#o_fixed').value    = INR.format(out.f_total);
+    qs('#o_demand').value   = INR.format(out.demand);
+    qs('#o_total').value    = INR.format(out.o_total);
+
+    qs('#gm').value = INR.format(out.gm);
+    qs('#ebitda').value = INR.format(out.ebitda);
+    qs('#gm_perkg').value = `₹ ${NUM.format(out.gm_perkg)}`;
+    qs('#ebitda_perkg').value = `₹ ${NUM.format(out.ebitda_perkg)}`;
+    qs('#breakeven_price').value = `₹ ${NUM.format(out.break_even)}`;
+
+    // Machines subtotals in table
+    // Write kWh & cost per row
+    const tariff = px(qs('#power_tariff').value);
+    let kwhTotal=0, costTotal=0;
+    mBody.querySelectorAll('tr').forEach(tr=>{
+      const [name, kw, load, hours] = Array.from(tr.querySelectorAll('td input')).map(i=>i.value);
+      const kwh = px(kw) * (px(load)/100) * px(hours);
+      const cost = kwh * tariff;
+      tr.children[4].textContent = NUM.format(kwh);
+      tr.children[5].textContent = INR.format(cost);
+      kwhTotal += kwh; costTotal += cost;
+    })
+    qs('#m_total_kwh').textContent = NUM.format(kwhTotal);
+    qs('#m_total_cost').textContent = INR.format(costTotal);
+
+    // Staff total per row
+    let sTotal=0;
+    sBody.querySelectorAll('tr').forEach(tr=>{
+      const head = px(tr.children[1].querySelector('input').value);
+      const sal  = px(tr.children[2].querySelector('input').value);
+      const tot = head*sal; sTotal += tot;
+      tr.children[3].textContent = INR.format(tot);
+    })
+    qs('#s_total').textContent = INR.format(sTotal);
+
+    // Fixed total per row
+    let fTotal=0;
+    fBody.querySelectorAll('tr').forEach(tr=>{
+      const amt = px(tr.children[1].querySelector('input').value); fTotal += amt;
+    })
+    qs('#f_total').textContent = INR.format(fTotal);
+    const demand = px(qs('#contract_kva').value) * px(qs('#demand_rate').value);
+    qs('#f_demand').textContent = INR.format(demand);
+
+    // Sensitivities
+    const sW = px(qs('#s_wheat_pct').value)/100;
+    const sF = px(qs('#s_flour_pct').value)/100;
+    const outMinusW = compute({...state, wheat_price_ton: state.wheat_price_ton*(1-sW)}).ebitda;
+    const outPlusW  = compute({...state, wheat_price_ton: state.wheat_price_ton*(1+sW)}).ebitda;
+    const outMinusF = compute({...state, flour_price: state.flour_price*(1-sF)}).ebitda;
+    const outPlusF  = compute({...state, flour_price: state.flour_price*(1+sF)}).ebitda;
+    qs('#sens_wheat_minus').textContent = INR.format(outMinusW);
+    qs('#sens_wheat_plus').textContent  = INR.format(outPlusW);
+    qs('#sens_flour_minus').textContent = INR.format(outMinusF);
+    qs('#sens_flour_plus').textContent  = INR.format(outPlusF);
+  }
+
+  /** Recalc pipeline **/
+  function recalc(){
+    const state = collectState();
+    const out = compute(state);
+    render(state, out);
+  }
+
+  /** Init **/
+  function init(){
+    const state = loadState() || defaultState();
+    setInputs(state);
+
+    // Event listeners for inputs
+    qsa('input').forEach(i=>{
+      i.addEventListener('input', ()=>{ recalc(); });
+    });
+
+    // Buttons
+    qs('#add-machine').addEventListener('click', ()=>{ mBody.appendChild(machineRow({name:'New Machine', kw:1, load:80, hours:100})); recalc(); });
+    qs('#add-staff').addEventListener('click', ()=>{ sBody.appendChild(staffRow({role:'New Role', head:1, salary:15000})); recalc(); });
+    qs('#add-fixed').addEventListener('click', ()=>{ fBody.appendChild(fixedRow({item:'New Item', amt:5000})); recalc(); });
+
+    qs('#btn-default-hours').addEventListener('click', ()=>{
+      const days = px(qs('#op_days').value)||25; const hpd = px(qs('#hours_per_day').value)||16;
+      const defHrs = days*hpd;
+      mBody.querySelectorAll('tr').forEach(tr=>{
+        const inp = tr.children[3].querySelector('input');
+        if(inp){ inp.value = defHrs; }
+      });
+      recalc();
+    })
+
+    qs('#btn-save').addEventListener('click', ()=>{ saveState(); const btn=qs('#btn-save'); btn.textContent='Saved ✓'; setTimeout(()=>btn.textContent='Save',1000); });
+
+    qs('#btn-reset').addEventListener('click', ()=>{
+      if(!confirm('Reset inputs to defaults?')) return;
+      const st = defaultState(); setInputs(st); recalc(); saveState();
+    })
+
+    qs('#btn-export').addEventListener('click', ()=>{
+      const st = collectState(); const out = compute(st);
+      const lines = [];
+      const add=(k,v)=>lines.push(`${k},${String(v).replaceAll(',','')}`);
+      add('Throughput_t_per_month', out.processed_t);
+      add('Flour_t', out.flour_t); add('Bran_t', out.bran_t);
+      add('Revenue_total', out.rev_total);
+      add('COGS_total', out.c_total);
+      add('GM', out.gm); add('Opex_total', out.o_total); add('EBITDA', out.ebitda);
+      add('GM_perkg', out.gm_perkg); add('EBITDA_perkg', out.ebitda_perkg);
+      add('BreakEven_flour_price_perkg', out.break_even);
+      add('Energy_kWh', out.m_kwh_total); add('Energy_cost', out.c_energy);
+      const blob = new Blob([lines.join('\n')], {type:'text/csv'});
+      const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download='flourmill_monthly_summary.csv'; a.click();
+    })
+
+    recalc();
+  }
+
+  init();
+})();
+</script></body>
+</html>
