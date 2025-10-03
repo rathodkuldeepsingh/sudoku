@@ -73,8 +73,21 @@ table{width:100%; border-collapse:collapse;} thead th{position:sticky; top:0; ba
   .scenario-metrics .value{font-size:16px; font-weight:700; margin-top:6px;}
   .scenario-metrics .value.positive{color:var(--ok);}
   .scenario-metrics .value.negative{color:var(--danger);}
-  .scenario-card .card-actions{display:flex; gap:8px; flex-wrap:wrap; margin-top:auto;}
+  .scenario-card .card-actions{display:flex; align-items:flex-start; margin-top:auto; position:relative;}
+  .scenario-card .card-actions button{cursor:pointer;}
+  .icon-btn{appearance:none; border:1px solid var(--border); background:#0f1930; color:var(--muted); width:30px; height:30px; border-radius:10px; display:inline-flex; align-items:center; justify-content:center; font-size:18px; line-height:1; transition:.15s ease;}
+  .icon-btn:hover, .icon-btn[aria-expanded="true"]{border-color:var(--accent); color:var(--accent); box-shadow:0 0 0 3px rgba(124,196,255,.08);}
+  .scenario-menu{position:relative;}
+  .scenario-menu-list{position:absolute; top:36px; right:0; background:#0f1930; border:1px solid var(--border); border-radius:12px; min-width:160px; display:flex; flex-direction:column; padding:6px 0; box-shadow:0 18px 35px rgba(5,17,34,.45); z-index:20;}
+  .scenario-menu-list[hidden]{display:none;}
+  .scenario-menu-list button{appearance:none; background:transparent; border:0; color:var(--text); text-align:left; padding:8px 14px; font:inherit; cursor:pointer; display:flex; justify-content:space-between; gap:12px;}
+  .scenario-menu-list button:hover{background:rgba(124,196,255,.12); color:var(--accent);}
+  .scenario-menu-list button.danger{color:#ffb1b1;}
+  .scenario-menu-list button.danger:hover{background:rgba(255,124,124,.12); color:#ff7c7c;}
   #scenario-empty{margin-top:16px;}
+  #view-detail{display:flex; flex-direction:column; gap:20px;}
+  #view-detail .grid{margin-top:0;}
+  .value-display{display:flex; align-items:center; justify-content:flex-end; font-weight:600; padding:4px 0;}
 
 </style>
 </head>
@@ -132,7 +145,7 @@ table{width:100%; border-collapse:collapse;} thead th{position:sticky; top:0; ba
         <div class="kpi"><div class="label">GM / kg flour</div><div class="value" id="kpi-gmkg">–</div></div>
         <div class="kpi"><div class="label">Break-even flour price (₹/kg)</div><div class="value" id="kpi-breakeven">–</div></div>
       </div>
-    </section><div class="grid" style="margin-top:16px">
+    </section><div class="grid">
   <!-- LEFT: INPUTS -->
   <section class="card">
     <h2>Inputs</h2>
@@ -277,36 +290,36 @@ table{width:100%; border-collapse:collapse;} thead th{position:sticky; top:0; ba
     <h2>Results</h2>
     <p class="sub">Unit economics are based on flour output only (bran is treated as a by‑product credit in revenue).</p>
 
-    <div class="row"><label>Processed (t/month)</label><input id="out_proc_t" type="text" class="mono" readonly></div>
-    <div class="row"><label>Flour output (t/month)</label><input id="out_flour_t" type="text" class="mono" readonly></div>
-    <div class="row"><label>Bran output (t/month)</label><input id="out_bran_t" type="text" class="mono" readonly></div>
+    <div class="row"><label>Processed (t/month)</label><div id="out_proc_t" class="value-display mono">–</div></div>
+    <div class="row"><label>Flour output (t/month)</label><div id="out_flour_t" class="value-display mono">–</div></div>
+    <div class="row"><label>Bran output (t/month)</label><div id="out_bran_t" class="value-display mono">–</div></div>
 
     <hr style="border:0; border-top:1px solid var(--border); margin:14px 0">
 
     <h3>Revenue</h3>
-    <div class="row"><label>Flour revenue</label><input id="rev_flour" type="text" class="mono" readonly></div>
-    <div class="row"><label>Bran revenue</label><input id="rev_bran" type="text" class="mono" readonly></div>
-    <div class="row"><label><strong>Total revenue</strong></label><input id="rev_total" type="text" class="mono" readonly></div>
+    <div class="row"><label>Flour revenue</label><div id="rev_flour" class="value-display mono">–</div></div>
+    <div class="row"><label>Bran revenue</label><div id="rev_bran" class="value-display mono">–</div></div>
+    <div class="row"><label><strong>Total revenue</strong></label><div id="rev_total" class="value-display mono">–</div></div>
 
     <h3 style="margin-top:10px">COGS (Variable)</h3>
-    <div class="row"><label>Wheat cost</label><input id="c_wheat" type="text" class="mono" readonly></div>
-    <div class="row"><label>Packaging</label><input id="c_pack" type="text" class="mono" readonly></div>
-    <div class="row"><label>Energy (machines)</label><input id="c_energy" type="text" class="mono" readonly></div>
-    <div class="row"><label>Other variable</label><input id="c_var" type="text" class="mono" readonly></div>
-    <div class="row"><label><strong>Total COGS</strong></label><input id="c_total" type="text" class="mono" readonly></div>
+    <div class="row"><label>Wheat cost</label><div id="c_wheat" class="value-display mono">–</div></div>
+    <div class="row"><label>Packaging</label><div id="c_pack" class="value-display mono">–</div></div>
+    <div class="row"><label>Energy (machines)</label><div id="c_energy" class="value-display mono">–</div></div>
+    <div class="row"><label>Other variable</label><div id="c_var" class="value-display mono">–</div></div>
+    <div class="row"><label><strong>Total COGS</strong></label><div id="c_total" class="value-display mono">–</div></div>
 
     <h3 style="margin-top:10px">Operating Expenses (Fixed)</h3>
-    <div class="row"><label>Salaries & wages</label><input id="o_salaries" type="text" class="mono" readonly></div>
-    <div class="row"><label>Fixed monthly costs</label><input id="o_fixed" type="text" class="mono" readonly></div>
-    <div class="row"><label>Demand charges</label><input id="o_demand" type="text" class="mono" readonly></div>
-    <div class="row"><label><strong>Total Opex</strong></label><input id="o_total" type="text" class="mono" readonly></div>
+    <div class="row"><label>Salaries & wages</label><div id="o_salaries" class="value-display mono">–</div></div>
+    <div class="row"><label>Fixed monthly costs</label><div id="o_fixed" class="value-display mono">–</div></div>
+    <div class="row"><label>Demand charges</label><div id="o_demand" class="value-display mono">–</div></div>
+    <div class="row"><label><strong>Total Opex</strong></label><div id="o_total" class="value-display mono">–</div></div>
 
     <hr style="border:0; border-top:1px solid var(--border); margin:14px 0">
-    <div class="row"><label><strong>Gross Margin</strong></label><input id="gm" type="text" class="mono" readonly></div>
-    <div class="row"><label><strong>EBITDA</strong></label><input id="ebitda" type="text" class="mono" readonly></div>
-    <div class="row"><label>GM / kg flour</label><input id="gm_perkg" type="text" class="mono" readonly></div>
-    <div class="row"><label>EBITDA / kg flour</label><input id="ebitda_perkg" type="text" class="mono" readonly></div>
-    <div class="row"><label>Break-even flour price (₹/kg)</label><input id="breakeven_price" type="text" class="mono" readonly></div>
+    <div class="row"><label><strong>Gross Margin</strong></label><div id="gm" class="value-display mono">–</div></div>
+    <div class="row"><label><strong>EBITDA</strong></label><div id="ebitda" class="value-display mono">–</div></div>
+    <div class="row"><label>GM / kg flour</label><div id="gm_perkg" class="value-display mono">–</div></div>
+    <div class="row"><label>EBITDA / kg flour</label><div id="ebitda_perkg" class="value-display mono">–</div></div>
+    <div class="row"><label>Break-even flour price (₹/kg)</label><div id="breakeven_price" class="value-display mono">–</div></div>
 
     <details style="margin-top:12px"><summary><strong>Sensitivity (quick what‑ifs)</strong></summary>
       <div class="row"><label>± Wheat price (%)</label><input type="number" id="s_wheat_pct" value="10" step="1"></div>
@@ -608,8 +621,41 @@ table{width:100%; border-collapse:collapse;} thead th{position:sticky; top:0; ba
     setTimeout(()=>URL.revokeObjectURL(url), 1000);
   }
 
+  function buildScenarioSummaryLines(scenario, out){
+    const lines = [];
+    if(scenario){
+      lines.push(`Scenario,${String(scenario.name).replace(/,/g,'')}`);
+    }
+    const add = (key, value) => lines.push(`${key},${String(value).replace(/,/g,'')}`);
+    add('Throughput_t_per_month', out.processed_t);
+    add('Flour_t', out.flour_t);
+    add('Bran_t', out.bran_t);
+    add('Revenue_total', out.rev_total);
+    add('COGS_total', out.c_total);
+    add('GM', out.gm);
+    add('Opex_total', out.o_total);
+    add('EBITDA', out.ebitda);
+    add('GM_perkg', out.gm_perkg);
+    add('EBITDA_perkg', out.ebitda_perkg);
+    add('BreakEven_flour_price_perkg', out.break_even);
+    add('Energy_kWh', out.m_kwh_total);
+    add('Energy_cost', out.c_energy);
+    return lines;
+  }
+
+  function closeAllScenarioMenus(){
+    qsa('.scenario-menu-list').forEach(menu=>{
+      menu.hidden = true;
+      const toggle = menu.parentElement ? menu.parentElement.querySelector('[data-menu-toggle]') : null;
+      if(toggle){
+        toggle.setAttribute('aria-expanded', 'false');
+      }
+    });
+  }
+
   function renderScenarioDashboard(){
     if(!dashboardList) return;
+    closeAllScenarioMenus();
     dashboardList.innerHTML = '';
     if(!scenarios.length){
       if(dashboardEmpty){ dashboardEmpty.hidden = false; }
@@ -628,9 +674,13 @@ table{width:100%; border-collapse:collapse;} thead th{position:sticky; top:0; ba
             <div class="scenario-name">${escapeHtml(s.name)}</div>
             <div class="scenario-updated">Updated ${escapeHtml(formatUpdated(s.updatedAt))}</div>
           </div>
-          <div class="card-actions">
-            <button class="btn primary" data-action="open" data-id="${s.id}">Open</button>
-            <button class="btn ghost" data-action="duplicate" data-id="${s.id}">Duplicate</button>
+          <div class="card-actions scenario-menu">
+            <button class="icon-btn" aria-haspopup="true" aria-expanded="false" aria-label="Scenario actions" data-menu-toggle data-id="${s.id}">⋮</button>
+            <div class="scenario-menu-list" hidden>
+              <button data-menu-action="duplicate" data-id="${s.id}">Duplicate</button>
+              <button data-menu-action="export" data-id="${s.id}">Download CSV</button>
+              <button class="danger" data-menu-action="delete" data-id="${s.id}">Delete</button>
+            </div>
           </div>
         </div>
         ${description}
@@ -653,10 +703,6 @@ table{width:100%; border-collapse:collapse;} thead th{position:sticky; top:0; ba
           </div>
         </div>
       `;
-      card.addEventListener('click', evt=>{
-        if(evt.target.closest('button')) return;
-        openScenario(s.id);
-      });
       dashboardList.appendChild(card);
     });
   }
@@ -676,6 +722,7 @@ table{width:100%; border-collapse:collapse;} thead th{position:sticky; top:0; ba
   }
 
   function openScenario(id){
+    closeAllScenarioMenus();
     const scenario = scenarios.find(s=>s.id === id);
     if(!scenario) return;
     if(currentScenarioId && currentScenarioId !== id && hasUnsavedChanges){
@@ -902,30 +949,30 @@ table{width:100%; border-collapse:collapse;} thead th{position:sticky; top:0; ba
     qs('#kpi-gmkg').textContent = `₹ ${NUM.format(out.gm_perkg)}`;
     qs('#kpi-breakeven').textContent = `₹ ${NUM.format(out.break_even)}`;
 
-    qs('#out_proc_t').value = NUM.format(out.processed_t);
-    qs('#out_flour_t').value = NUM.format(out.flour_t);
-    qs('#out_bran_t').value  = NUM.format(out.bran_t);
+    qs('#out_proc_t').textContent = NUM.format(out.processed_t);
+    qs('#out_flour_t').textContent = NUM.format(out.flour_t);
+    qs('#out_bran_t').textContent  = NUM.format(out.bran_t);
 
-    qs('#rev_flour').value = INR.format(out.rev_flour);
-    qs('#rev_bran').value  = INR.format(out.rev_bran);
-    qs('#rev_total').value = INR.format(out.rev_total);
+    qs('#rev_flour').textContent = INR.format(out.rev_flour);
+    qs('#rev_bran').textContent  = INR.format(out.rev_bran);
+    qs('#rev_total').textContent = INR.format(out.rev_total);
 
-    qs('#c_wheat').value = INR.format(out.c_wheat);
-    qs('#c_pack').value  = INR.format(out.c_pack);
-    qs('#c_energy').value= INR.format(out.c_energy);
-    qs('#c_var').value   = INR.format(out.c_var);
-    qs('#c_total').value = INR.format(out.c_total);
+    qs('#c_wheat').textContent = INR.format(out.c_wheat);
+    qs('#c_pack').textContent  = INR.format(out.c_pack);
+    qs('#c_energy').textContent= INR.format(out.c_energy);
+    qs('#c_var').textContent   = INR.format(out.c_var);
+    qs('#c_total').textContent = INR.format(out.c_total);
 
-    qs('#o_salaries').value = INR.format(out.s_total);
-    qs('#o_fixed').value    = INR.format(out.f_total);
-    qs('#o_demand').value   = INR.format(out.demand);
-    qs('#o_total').value    = INR.format(out.o_total);
+    qs('#o_salaries').textContent = INR.format(out.s_total);
+    qs('#o_fixed').textContent    = INR.format(out.f_total);
+    qs('#o_demand').textContent   = INR.format(out.demand);
+    qs('#o_total').textContent    = INR.format(out.o_total);
 
-    qs('#gm').value = INR.format(out.gm);
-    qs('#ebitda').value = INR.format(out.ebitda);
-    qs('#gm_perkg').value = `₹ ${NUM.format(out.gm_perkg)}`;
-    qs('#ebitda_perkg').value = `₹ ${NUM.format(out.ebitda_perkg)}`;
-    qs('#breakeven_price').value = `₹ ${NUM.format(out.break_even)}`;
+    qs('#gm').textContent = INR.format(out.gm);
+    qs('#ebitda').textContent = INR.format(out.ebitda);
+    qs('#gm_perkg').textContent = `₹ ${NUM.format(out.gm_perkg)}`;
+    qs('#ebitda_perkg').textContent = `₹ ${NUM.format(out.ebitda_perkg)}`;
+    qs('#breakeven_price').textContent = `₹ ${NUM.format(out.break_even)}`;
 
     const tariff = px(qs('#power_tariff').value);
     let kwhTotal=0, costTotal=0;
@@ -1056,6 +1103,38 @@ table{width:100%; border-collapse:collapse;} thead th{position:sticky; top:0; ba
     openScenario(scenario.id);
   }
 
+  function exportScenarioSummary(id){
+    const scenario = scenarios.find(s=>s.id === id);
+    if(!scenario) return;
+    let state = null;
+    if(currentScenarioId === id){
+      state = collectState();
+    }else{
+      state = ensureStateShape(scenario.state);
+    }
+    const out = compute(state);
+    const lines = buildScenarioSummaryLines(scenario, out);
+    const slug = slugify(scenario.name || 'scenario') || 'scenario';
+    downloadCsv(`flourmill_monthly_summary_${slug}.csv`, lines);
+  }
+
+  function deleteScenario(id){
+    const idx = scenarios.findIndex(s=>s.id === id);
+    if(idx === -1) return;
+    const name = scenarios[idx].name || 'Scenario';
+    if(!confirm(`Delete "${name}"? This cannot be undone.`)) return;
+    const deletingCurrent = currentScenarioId === id;
+    scenarios.splice(idx, 1);
+    saveScenarios();
+    if(deletingCurrent){
+      currentScenarioId = null;
+      hasUnsavedChanges = false;
+      showDashboard();
+    }else{
+      renderScenarioDashboard();
+    }
+  }
+
   function exportAllScenarios(){
     if(!scenarios.length) return;
     const header = ['Scenario','Throughput_t_per_month','Flour_t','Revenue_total','COGS_total','Opex_total','EBITDA','GM','GM_perkg','EBITDA_perkg'];
@@ -1088,14 +1167,42 @@ table{width:100%; border-collapse:collapse;} thead th{position:sticky; top:0; ba
 
   if(dashboardList){
     dashboardList.addEventListener('click', evt=>{
-      const btn = evt.target.closest('button[data-action]');
-      if(!btn) return;
-      const id = btn.getAttribute('data-id');
-      if(!id) return;
-      if(btn.dataset.action === 'open'){
-        openScenario(id);
-      }else if(btn.dataset.action === 'duplicate'){
-        duplicateScenario(id);
+      const toggle = evt.target.closest('[data-menu-toggle]');
+      if(toggle){
+        evt.stopPropagation();
+        const menu = toggle.parentElement.querySelector('.scenario-menu-list');
+        if(!menu) return;
+        const expanded = toggle.getAttribute('aria-expanded') === 'true';
+        closeAllScenarioMenus();
+        if(!expanded){
+          menu.hidden = false;
+          toggle.setAttribute('aria-expanded', 'true');
+        }
+        return;
+      }
+
+      const actionBtn = evt.target.closest('[data-menu-action]');
+      if(actionBtn){
+        evt.stopPropagation();
+        const id = actionBtn.getAttribute('data-id');
+        if(!id) return;
+        closeAllScenarioMenus();
+        if(actionBtn.dataset.menuAction === 'duplicate'){
+          duplicateScenario(id);
+        }else if(actionBtn.dataset.menuAction === 'export'){
+          exportScenarioSummary(id);
+        }else if(actionBtn.dataset.menuAction === 'delete'){
+          deleteScenario(id);
+        }
+        return;
+      }
+
+      const card = evt.target.closest('.scenario-card');
+      if(card && !evt.target.closest('.scenario-menu')){
+        const id = card.dataset.id;
+        if(id){
+          openScenario(id);
+        }
       }
     });
   }
@@ -1164,19 +1271,7 @@ table{width:100%; border-collapse:collapse;} thead th{position:sticky; top:0; ba
       const out = compute(state);
       render(state, out);
       const scenario = currentScenario();
-      const lines = [];
-      if(scenario){
-        lines.push(`Scenario,${String(scenario.name).replace(/,/g,'')}`);
-      }
-      const add=(k,v)=>lines.push(`${k},${String(v).replace(/,/g,'')}`);
-      add('Throughput_t_per_month', out.processed_t);
-      add('Flour_t', out.flour_t); add('Bran_t', out.bran_t);
-      add('Revenue_total', out.rev_total);
-      add('COGS_total', out.c_total);
-      add('GM', out.gm); add('Opex_total', out.o_total); add('EBITDA', out.ebitda);
-      add('GM_perkg', out.gm_perkg); add('EBITDA_perkg', out.ebitda_perkg);
-      add('BreakEven_flour_price_perkg', out.break_even);
-      add('Energy_kWh', out.m_kwh_total); add('Energy_cost', out.c_energy);
+      const lines = buildScenarioSummaryLines(scenario, out);
       const slug = slugify(scenario ? scenario.name : 'scenario') || 'scenario';
       downloadCsv(`flourmill_monthly_summary_${slug}.csv`, lines);
     });
