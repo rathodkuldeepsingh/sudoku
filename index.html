@@ -62,9 +62,7 @@ table{width:100%; border-collapse:collapse;} thead th{position:sticky; top:0; ba
   .footer-note{color:#7d8dad; font-size:12px; margin-top:14px} .small{font-size:12px} .mono{font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace} .align-right{text-align:right} .nowrap{white-space:nowrap}
 
   .scenario-grid{display:flex; flex-direction:column; gap:12px; margin-top:12px;}
-  .scenario-card{display:flex; flex-direction:column; gap:12px; cursor:pointer; transition:border-color .15s ease, box-shadow .15s ease;}
-  .scenario-card:hover{border-color:var(--accent); box-shadow:0 0 0 3px rgba(124,196,255,.08);}
-  .scenario-card:focus-visible{outline:2px solid var(--accent); outline-offset:2px;}
+  .scenario-card{display:flex; flex-direction:column; gap:12px;}
   .scenario-card .top{display:flex; justify-content:space-between; align-items:flex-start; gap:12px;}
   .scenario-name{font-size:16px; font-weight:600;}
   .scenario-updated{font-size:12px; color:var(--muted); margin-top:2px;}
@@ -75,9 +73,8 @@ table{width:100%; border-collapse:collapse;} thead th{position:sticky; top:0; ba
   .scenario-metrics .value{font-size:16px; font-weight:700; margin-top:6px;}
   .scenario-metrics .value.positive{color:var(--ok);}
   .scenario-metrics .value.negative{color:var(--danger);}
-  .scenario-card .card-actions{display:flex; align-items:center; gap:8px; margin-top:auto; position:relative;}
+  .scenario-card .card-actions{display:flex; align-items:flex-start; margin-top:auto; position:relative;}
   .scenario-card .card-actions button{cursor:pointer;}
-  .scenario-card .open-scenario-btn{font-size:20px;}
   .icon-btn{appearance:none; border:1px solid var(--border); background:#0f1930; color:var(--muted); width:30px; height:30px; border-radius:10px; display:inline-flex; align-items:center; justify-content:center; font-size:18px; line-height:1; transition:.15s ease;}
   .icon-btn:hover, .icon-btn[aria-expanded="true"]{border-color:var(--accent); color:var(--accent); box-shadow:0 0 0 3px rgba(124,196,255,.08);}
   .scenario-menu{position:relative;}
@@ -669,10 +666,6 @@ table{width:100%; border-collapse:collapse;} thead th{position:sticky; top:0; ba
       const out = compute(s.state);
       const card = document.createElement('article');
       card.className = 'scenario-card card';
-      card.dataset.id = s.id;
-      card.tabIndex = 0;
-      card.setAttribute('role', 'button');
-      card.setAttribute('aria-label', `Open ${s.name}`);
       const description = s.description ? `<p class="scenario-description">${escapeHtml(s.description).replace(/\n/g,'<br>')}</p>` : '';
       const ebitdaClass = out.ebitda >= 0 ? 'positive' : 'negative';
       card.innerHTML = `
@@ -681,15 +674,12 @@ table{width:100%; border-collapse:collapse;} thead th{position:sticky; top:0; ba
             <div class="scenario-name">${escapeHtml(s.name)}</div>
             <div class="scenario-updated">Updated ${escapeHtml(formatUpdated(s.updatedAt))}</div>
           </div>
-          <div class="card-actions">
-            <button class="icon-btn open-scenario-btn" type="button" aria-label="Open ${escapeHtml(s.name)}">›</button>
-            <div class="scenario-menu">
-              <button class="icon-btn" aria-haspopup="true" aria-expanded="false" aria-label="Scenario actions" data-menu-toggle data-id="${s.id}">⋮</button>
-              <div class="scenario-menu-list" hidden>
-                <button data-menu-action="duplicate" data-id="${s.id}">Duplicate</button>
-                <button data-menu-action="export" data-id="${s.id}">Download CSV</button>
-                <button class="danger" data-menu-action="delete" data-id="${s.id}">Delete</button>
-              </div>
+          <div class="card-actions scenario-menu">
+            <button class="icon-btn" aria-haspopup="true" aria-expanded="false" aria-label="Scenario actions" data-menu-toggle data-id="${s.id}">⋮</button>
+            <div class="scenario-menu-list" hidden>
+              <button data-menu-action="duplicate" data-id="${s.id}">Duplicate</button>
+              <button data-menu-action="export" data-id="${s.id}">Download CSV</button>
+              <button class="danger" data-menu-action="delete" data-id="${s.id}">Delete</button>
             </div>
           </div>
         </div>
@@ -713,29 +703,6 @@ table{width:100%; border-collapse:collapse;} thead th{position:sticky; top:0; ba
           </div>
         </div>
       `;
-      const openBtn = card.querySelector('.open-scenario-btn');
-      if(openBtn){
-        openBtn.addEventListener('click', evt=>{
-          evt.preventDefault();
-          evt.stopPropagation();
-          closeAllScenarioMenus();
-          openScenario(s.id);
-        });
-      }
-      card.addEventListener('click', evt=>{
-        if(evt.defaultPrevented) return;
-        if(evt.target.closest('.scenario-menu')) return;
-        closeAllScenarioMenus();
-        openScenario(s.id);
-      });
-      card.addEventListener('keydown', evt=>{
-        if(evt.target.closest('.scenario-menu')) return;
-        if(evt.key === 'Enter' || evt.key === ' '){
-          evt.preventDefault();
-          closeAllScenarioMenus();
-          openScenario(s.id);
-        }
-      });
       dashboardList.appendChild(card);
     });
   }
@@ -1230,14 +1197,16 @@ table{width:100%; border-collapse:collapse;} thead th{position:sticky; top:0; ba
         return;
       }
 
+      const card = evt.target.closest('.scenario-card');
+      if(card && !evt.target.closest('.scenario-menu')){
+        const id = card.dataset.id;
+        if(id){
+          openScenario(id);
+        }
+      }
+
     });
   }
-
-  document.addEventListener('click', evt=>{
-    if(!evt.target.closest('.scenario-menu')){
-      closeAllScenarioMenus();
-    }
-  });
 
   if(scenarioNameInput){
     scenarioNameInput.addEventListener('input', handleScenarioMetaChange);
