@@ -27,7 +27,17 @@
     border-bottom:1px solid var(--border);
   }
   .container{max-width:1200px; margin:0 auto; padding:16px;}
-  .titlebar{display:flex; align-items:center; gap:12px; justify-content:space-between;}
+  .titlebar{display:flex; align-items:center; gap:12px; justify-content:space-between; flex-wrap:wrap;}
+  .title-group{display:flex; align-items:center; gap:12px; flex-wrap:wrap;}
+  #btn-back{display:inline-flex; align-items:center; gap:6px;}
+  #scenario-tag:empty{display:none;}
+  .action-group{display:flex; gap:8px; flex-wrap:wrap;}
+  body[data-view="dashboard"] #scenario-actions{display:none;}
+  body[data-view="dashboard"] #btn-back{display:none;}
+  body[data-view="dashboard"] #scenario-tag{display:none;}
+  body[data-view="dashboard"] #view-detail{display:none;}
+  body[data-view="scenario"] #dashboard-actions{display:none;}
+  body[data-view="scenario"] #view-dashboard{display:none;}
   h1{font-size:20px; margin:8px 0;}
   .btn{appearance:none; border:1px solid var(--border); background:transparent; color:var(--text);
        padding:8px 12px; border-radius:10px; cursor:pointer; transition:.15s ease;}
@@ -44,24 +54,57 @@
 
 table{width:100%; border-collapse:collapse;} thead th{position:sticky; top:0; background:#0a1426; border-bottom:1px solid var(--border); padding:10px; font-size:12px; color:var(--muted); text-align:left} tbody td{border-bottom:1px dashed #1d2b47; padding:8px} tfoot td{border-top:1px solid var(--border); padding:10px; font-weight:700} .actions{display:flex; gap:8px; flex-wrap:wrap} .right{margin-left:auto} .tag{display:inline-block; font-size:11px; padding:2px 8px; border-radius:999px; border:1px solid var(--border); color:var(--muted)} .pill{display:inline-flex; gap:6px; align-items:center; padding:6px 10px; border-radius:999px; background:#0e182b; border:1px solid var(--border); color:var(--muted);} .muted{color:var(--muted)} details{border:1px dashed var(--border); padding:10px; border-radius:12px;} details[open]{background:#0b162c} details summary{cursor:pointer}
 
-.footer-note{color:#7d8dad; font-size:12px; margin-top:14px} .small{font-size:12px} .mono{font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace} .align-right{text-align:right} .nowrap{white-space:nowrap}
+  .footer-note{color:#7d8dad; font-size:12px; margin-top:14px} .small{font-size:12px} .mono{font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace} .align-right{text-align:right} .nowrap{white-space:nowrap}
+
+  .scenario-grid{display:grid; gap:12px; grid-template-columns:repeat(auto-fit, minmax(260px, 1fr)); margin-top:12px;}
+  .scenario-card{display:flex; flex-direction:column; gap:12px;}
+  .scenario-card .top{display:flex; justify-content:space-between; align-items:flex-start; gap:12px;}
+  .scenario-name{font-size:16px; font-weight:600;}
+  .scenario-updated{font-size:12px; color:var(--muted); margin-top:2px;}
+  .scenario-metrics{display:grid; gap:12px; grid-template-columns:repeat(2, minmax(0, 1fr));}
+  .scenario-metrics .metric{background:#0f1930; border:1px solid var(--border); border-radius:12px; padding:10px;}
+  .scenario-metrics .label{font-size:12px; color:var(--muted);}
+  .scenario-metrics .value{font-size:16px; font-weight:700; margin-top:6px;}
+  .scenario-metrics .value.positive{color:var(--ok);}
+  .scenario-metrics .value.negative{color:var(--danger);}
+  .scenario-card .card-actions{display:flex; gap:8px; flex-wrap:wrap; margin-top:auto;}
+  #scenario-empty{margin-top:16px;}
 
 </style>
 </head>
-<body>
+<body data-view="dashboard">
   <header>
     <div class="container titlebar">
-      <div style="display:flex; align-items:center; gap:12px; flex-wrap:wrap">
-        <h1>Flour Mill – Monthly Finance Calculator</h1>
-        <span class="tag">25 TPD (fully editable)</span>
+      <div class="title-group">
+        <button class="btn ghost" id="btn-back">← All Scenarios</button>
+        <h1 id="page-title">Scenario Dashboard</h1>
+        <span class="tag" id="scenario-tag"></span>
       </div>
       <div class="actions">
-        <button class="btn ghost" id="btn-export">Export Summary CSV</button>
-        <button class="btn ghost" id="btn-save">Save</button>
-        <button class="btn danger" id="btn-reset">Reset Defaults</button>
+        <div class="action-group" id="dashboard-actions">
+          <button class="btn primary" id="btn-new-scenario">New Scenario</button>
+          <button class="btn ghost" id="btn-export-all">Export All CSV</button>
+        </div>
+        <div class="action-group" id="scenario-actions">
+          <button class="btn ghost" id="btn-duplicate">Duplicate</button>
+          <button class="btn ghost" id="btn-export">Export Summary CSV</button>
+          <button class="btn ghost" id="btn-save">Save</button>
+          <button class="btn danger" id="btn-reset">Reset Defaults</button>
+        </div>
       </div>
     </div>
-  </header>  <main class="container" style="padding-top:10px">
+  </header>
+
+  <main class="container" id="view-dashboard" style="padding-top:10px">
+    <section class="card">
+      <h2>Scenario Overview</h2>
+      <p class="sub">Compare scenarios at a glance. Select a scenario to open detailed inputs and continue editing.</p>
+      <div id="scenario-list" class="scenario-grid"></div>
+      <p class="small muted" id="scenario-empty" hidden>No scenarios yet. Create one to get started.</p>
+    </section>
+  </main>
+
+  <main class="container" id="view-detail" style="padding-top:10px">
     <section class="card" id="summary">
       <h2>Summary</h2>
       <p class="sub">Tweak inputs on the left. This recalculates <em>throughput, revenue, COGS, energy, salaries,</em> and <em>EBITDA</em> live. Values use Indian locale formatting.</p>
@@ -280,24 +323,46 @@ table{width:100%; border-collapse:collapse;} thead th{position:sticky; top:0; ba
   </section>
 </div>
 
-  </main><script>
+  </main>
+
+  <script>
 (function(){
-  /** Utilities **/
+  const STORAGE_KEY = 'fm_calc_scenarios_v1';
+  const LEGACY_KEY = 'fm_calc_state_v1';
+
   const INR = new Intl.NumberFormat('en-IN', { style:'currency', currency:'INR', maximumFractionDigits:0 });
   const NUM = new Intl.NumberFormat('en-IN', { maximumFractionDigits:2 });
   const qs = s => document.querySelector(s);
   const qsa = s => Array.from(document.querySelectorAll(s));
   const px = v => isFinite(+v) ? +v : 0;
+  const cloneState = obj => JSON.parse(JSON.stringify(obj));
+  const newId = () => `scn-${Math.random().toString(36).slice(2,8)}-${Date.now().toString(36)}`;
 
-  function saveState(){
-    const state = collectState();
-    localStorage.setItem('fm_calc_state_v1', JSON.stringify(state));
-  }
-  function loadState(){
-    const raw = localStorage.getItem('fm_calc_state_v1');
-    if(!raw) return null;
-    try{ return JSON.parse(raw); }catch(e){ return null; }
-  }
+  const mBody = qs('#tbl-machines tbody');
+  const sBody = qs('#tbl-staff tbody');
+  const fBody = qs('#tbl-fixed tbody');
+
+  const btnSave = qs('#btn-save');
+  const btnDuplicate = qs('#btn-duplicate');
+  const btnReset = qs('#btn-reset');
+  const btnExport = qs('#btn-export');
+  const btnExportAll = qs('#btn-export-all');
+  const btnNewScenario = qs('#btn-new-scenario');
+  const btnBack = qs('#btn-back');
+  const btnAddMachine = qs('#add-machine');
+  const btnAddStaff = qs('#add-staff');
+  const btnAddFixed = qs('#add-fixed');
+  const btnDefaultHours = qs('#btn-default-hours');
+
+  const scenarioTag = qs('#scenario-tag');
+  const pageTitle = qs('#page-title');
+  const dashboardList = qs('#scenario-list');
+  const dashboardEmpty = qs('#scenario-empty');
+
+  let scenarios = [];
+  let currentScenarioId = null;
+  let hasUnsavedChanges = false;
+  let saveResetTimer = null;
 
   function defaultState(){
     return {
@@ -342,10 +407,265 @@ table{width:100%; border-collapse:collapse;} thead th{position:sticky; top:0; ba
     }
   }
 
-  /** Build dynamic tables **/
-  const mBody = qs('#tbl-machines tbody');
-  const sBody = qs('#tbl-staff tbody');
-  const fBody = qs('#tbl-fixed tbody');
+  function ensureStateShape(state){
+    const base = defaultState();
+    const merged = Object.assign({}, base, state||{});
+    const machinesSrc = Array.isArray(state && state.machines) ? state.machines : base.machines;
+    merged.machines = machinesSrc.map(m=>({
+      name: (m && m.name) || '',
+      kw: px(m && m.kw),
+      load: px(m && m.load),
+      hours: px(m && m.hours)
+    }));
+    const staffSrc = Array.isArray(state && state.staff) ? state.staff : base.staff;
+    merged.staff = staffSrc.map(s=>({
+      role: (s && s.role) || '',
+      head: px(s && s.head),
+      salary: px(s && s.salary)
+    }));
+    const fixedSrc = Array.isArray(state && state.fixed) ? state.fixed : base.fixed;
+    merged.fixed = fixedSrc.map(f=>({
+      item: (f && f.item) || '',
+      amt: px(f && f.amt)
+    }));
+    return merged;
+  }
+
+  function escapeHtml(str){
+    const ESC_MAP = { "&":"&amp;", "<":"&lt;", ">":"&gt;", '"':"&quot;", "'":"&#39;" };
+    return String(str ?? '').replace(/[&<>"']/g, ch => ESC_MAP[ch]);
+  }
+
+  function formatUpdated(ts){
+    if(!ts) return 'Never saved';
+    const diff = Date.now() - ts;
+    const minute = 60*1000;
+    const hour = 60*minute;
+    const day = 24*hour;
+    if(diff < minute) return 'Just now';
+    if(diff < hour) return `${Math.round(diff/minute)} min ago`;
+    if(diff < day) return `${Math.round(diff/hour)} hr ago`;
+    return new Date(ts).toLocaleDateString();
+  }
+
+  function uniqueScenarioName(base){
+    const trimmed = String(base || 'Scenario').trim() || 'Scenario';
+    const taken = new Set(scenarios.map(s=>s.name));
+    if(!taken.has(trimmed)) return trimmed;
+    let idx = 2;
+    let candidate = `${trimmed} (${idx})`;
+    while(taken.has(candidate)){
+      idx += 1;
+      candidate = `${trimmed} (${idx})`;
+    }
+    return candidate;
+  }
+
+  function currentScenario(){
+    return scenarios.find(s=>s.id === currentScenarioId) || null;
+  }
+
+  function updateDocumentTitle(){
+    if(document.body.dataset.view === 'scenario'){
+      const sc = currentScenario();
+      if(sc){
+        document.title = `Flour Mill – ${sc.name}`;
+        return;
+      }
+    }
+    document.title = 'Flour Mill Monthly Finance Calculator';
+  }
+
+  function updateScenarioTag(out){
+    if(document.body.dataset.view === 'scenario' && scenarioTag){
+      scenarioTag.textContent = `COGS ${INR.format(out.c_total)} · EBITDA ${INR.format(out.ebitda)}`;
+    }
+  }
+
+  function markDirty(){
+    if(!hasUnsavedChanges){
+      hasUnsavedChanges = true;
+    }
+    if(saveResetTimer){
+      clearTimeout(saveResetTimer);
+      saveResetTimer = null;
+    }
+    if(btnSave){
+      btnSave.textContent = 'Save*';
+    }
+  }
+
+  function markSaved(){
+    hasUnsavedChanges = false;
+    if(saveResetTimer){
+      clearTimeout(saveResetTimer);
+      saveResetTimer = null;
+    }
+    if(btnSave){
+      btnSave.textContent = 'Save';
+    }
+  }
+
+  function flashSavedLabel(){
+    if(!btnSave) return;
+    if(saveResetTimer){
+      clearTimeout(saveResetTimer);
+    }
+    btnSave.textContent = 'Saved ✓';
+    saveResetTimer = setTimeout(()=>{
+      saveResetTimer = null;
+      if(!hasUnsavedChanges){
+        btnSave.textContent = 'Save';
+      }
+    }, 1200);
+  }
+
+  function loadLegacyState(){
+    const raw = localStorage.getItem(LEGACY_KEY);
+    if(!raw) return null;
+    try{
+      const parsed = JSON.parse(raw);
+      if(parsed && typeof parsed === 'object'){
+        return ensureStateShape(parsed);
+      }
+    }catch(e){}
+    return null;
+  }
+
+  function loadScenarios(){
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if(raw){
+      try{
+        const parsed = JSON.parse(raw);
+        if(Array.isArray(parsed) && parsed.length){
+          return parsed.map(item=>({
+            id: item && item.id ? item.id : newId(),
+            name: item && item.name ? String(item.name) : 'Scenario',
+            state: ensureStateShape(item && item.state),
+            createdAt: item && item.createdAt ? item.createdAt : Date.now(),
+            updatedAt: item && item.updatedAt ? item.updatedAt : (item && item.createdAt ? item.createdAt : Date.now())
+          }));
+        }
+      }catch(e){}
+    }
+    const legacy = loadLegacyState();
+    if(legacy){
+      localStorage.removeItem(LEGACY_KEY);
+      const ts = Date.now();
+      return [{
+        id: newId(),
+        name: 'Base Scenario',
+        state: legacy,
+        createdAt: ts,
+        updatedAt: ts
+      }];
+    }
+    const ts = Date.now();
+    return [{
+      id: newId(),
+      name: 'Base Scenario',
+      state: ensureStateShape(defaultState()),
+      createdAt: ts,
+      updatedAt: ts
+    }];
+  }
+
+  function saveScenarios(){
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(scenarios));
+  }
+
+  function slugify(name){
+    return String(name || 'scenario').toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-+|-+$/g,'');
+  }
+
+  function downloadCsv(filename, lines){
+    if(!lines || !lines.length) return;
+    const blob = new Blob([lines.join('\n')], {type:'text/csv'});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    a.click();
+    setTimeout(()=>URL.revokeObjectURL(url), 1000);
+  }
+
+  function renderScenarioDashboard(){
+    if(!dashboardList) return;
+    dashboardList.innerHTML = '';
+    if(!scenarios.length){
+      if(dashboardEmpty){ dashboardEmpty.hidden = false; }
+      return;
+    }
+    if(dashboardEmpty){ dashboardEmpty.hidden = true; }
+    scenarios.forEach(s=>{
+      const out = compute(s.state);
+      const card = document.createElement('article');
+      card.className = 'scenario-card card';
+      card.innerHTML = `
+        <div class="top">
+          <div>
+            <div class="scenario-name">${escapeHtml(s.name)}</div>
+            <div class="scenario-updated">Updated ${escapeHtml(formatUpdated(s.updatedAt))}</div>
+          </div>
+          <div class="card-actions">
+            <button class="btn primary" data-action="open" data-id="${s.id}">Open</button>
+            <button class="btn ghost" data-action="duplicate" data-id="${s.id}">Duplicate</button>
+          </div>
+        </div>
+        <div class="scenario-metrics">
+          <div class="metric">
+            <div class="label">COGS / month</div>
+            <div class="value">${INR.format(out.c_total)}</div>
+          </div>
+          <div class="metric">
+            <div class="label">EBITDA / month</div>
+            <div class="value ${out.ebitda >= 0 ? 'positive' : 'negative'}">${INR.format(out.ebitda)}</div>
+          </div>
+        </div>
+      `;
+      card.addEventListener('click', evt=>{
+        if(evt.target.closest('button')) return;
+        openScenario(s.id);
+      });
+      dashboardList.appendChild(card);
+    });
+  }
+
+  function showDashboard(){
+    if(currentScenarioId && hasUnsavedChanges){
+      persistCurrentScenario();
+      markSaved();
+    }
+    currentScenarioId = null;
+    document.body.dataset.view = 'dashboard';
+    pageTitle.textContent = 'Scenario Dashboard';
+    if(scenarioTag){ scenarioTag.textContent = ''; }
+    markSaved();
+    updateDocumentTitle();
+    renderScenarioDashboard();
+  }
+
+  function openScenario(id){
+    const scenario = scenarios.find(s=>s.id === id);
+    if(!scenario) return;
+    if(currentScenarioId && currentScenarioId !== id && hasUnsavedChanges){
+      persistCurrentScenario();
+      markSaved();
+    }
+    currentScenarioId = scenario.id;
+    document.body.dataset.view = 'scenario';
+    pageTitle.textContent = `Flour Mill – ${scenario.name}`;
+    updateDocumentTitle();
+    setInputs(ensureStateShape(scenario.state));
+    markSaved();
+    recalc();
+  }
+
+  const handleChange = ()=>{
+    if(!currentScenarioId) return;
+    markDirty();
+    recalc();
+  };
 
   function machineRow(m){
     const tr = document.createElement('tr');
@@ -358,9 +678,10 @@ table{width:100%; border-collapse:collapse;} thead th{position:sticky; top:0; ba
       <td class="align-right mono">₹0</td>
       <td><button class="btn ghost btn-del">✕</button></td>
     `;
-    attachRowEvents(tr, recalc);
+    attachRowEvents(tr);
     return tr;
   }
+
   function staffRow(s){
     const tr = document.createElement('tr');
     tr.innerHTML = `
@@ -370,9 +691,10 @@ table{width:100%; border-collapse:collapse;} thead th{position:sticky; top:0; ba
       <td class="align-right mono">₹0</td>
       <td><button class="btn ghost btn-del">✕</button></td>
     `;
-    attachRowEvents(tr, recalc);
+    attachRowEvents(tr);
     return tr;
   }
+
   function fixedRow(f){
     const tr = document.createElement('tr');
     tr.innerHTML = `
@@ -380,19 +702,24 @@ table{width:100%; border-collapse:collapse;} thead th{position:sticky; top:0; ba
       <td class="align-right"><input type="number" step="100" value="${f.amt||0}"></td>
       <td><button class="btn ghost btn-del">✕</button></td>
     `;
-    attachRowEvents(tr, recalc);
+    attachRowEvents(tr);
     return tr;
   }
 
-  function attachRowEvents(tr, onChange){
-    tr.querySelectorAll('input').forEach(el=>{
-      el.addEventListener('input', onChange);
-    })
+  function attachRowEvents(tr){
+    tr.querySelectorAll('input:not([readonly])').forEach(el=>{
+      el.addEventListener('input', handleChange);
+    });
     const del = tr.querySelector('.btn-del');
-    if(del){ del.addEventListener('click', ()=>{ tr.remove(); recalc(); }); }
+    if(del){
+      del.addEventListener('click', ()=>{
+        tr.remove();
+        markDirty();
+        recalc();
+      });
+    }
   }
 
-  /** Collect & compute **/
   function collectState(){
     const state = {
       cap_tpd: px(qs('#cap_tpd').value),
@@ -417,84 +744,71 @@ table{width:100%; border-collapse:collapse;} thead th{position:sticky; top:0; ba
         kw: px(tds[1].querySelector('input').value),
         load: px(tds[2].querySelector('input').value),
         hours: px(tds[3].querySelector('input').value)
-      })
-    })
+      });
+    });
     sBody.querySelectorAll('tr').forEach(tr=>{
       const tds = tr.querySelectorAll('td');
       state.staff.push({
         role: tds[0].querySelector('input').value,
         head: px(tds[1].querySelector('input').value),
         salary: px(tds[2].querySelector('input').value)
-      })
-    })
+      });
+    });
     fBody.querySelectorAll('tr').forEach(tr=>{
       const tds = tr.querySelectorAll('td');
-      state.fixed.push({ item: tds[0].querySelector('input').value, amt: px(tds[1].querySelector('input').value) })
-    })
+      state.fixed.push({ item: tds[0].querySelector('input').value, amt: px(tds[1].querySelector('input').value) });
+    });
     return state;
   }
 
   function setInputs(state){
-    qs('#cap_tpd').value = state.cap_tpd; qs('#op_days').value = state.op_days; qs('#hours_per_day').value = state.hours_per_day; qs('#util_pct').value = state.util_pct;
-    qs('#extraction_pct').value = state.extraction_pct; qs('#flour_price').value = state.flour_price; qs('#bran_price').value = state.bran_price; qs('#pack_cost_perkg').value = state.pack_cost_perkg;
-    qs('#wheat_price_ton').value = state.wheat_price_ton; qs('#var_cost_ton').value = state.var_cost_ton; qs('#power_tariff').value = state.power_tariff; qs('#contract_kva').value = state.contract_kva; qs('#demand_rate').value = state.demand_rate;
+    const st = ensureStateShape(state);
+    qs('#cap_tpd').value = st.cap_tpd; qs('#op_days').value = st.op_days; qs('#hours_per_day').value = st.hours_per_day; qs('#util_pct').value = st.util_pct;
+    qs('#extraction_pct').value = st.extraction_pct; qs('#flour_price').value = st.flour_price; qs('#bran_price').value = st.bran_price; qs('#pack_cost_perkg').value = st.pack_cost_perkg;
+    qs('#wheat_price_ton').value = st.wheat_price_ton; qs('#var_cost_ton').value = st.var_cost_ton; qs('#power_tariff').value = st.power_tariff; qs('#contract_kva').value = st.contract_kva; qs('#demand_rate').value = st.demand_rate;
 
     mBody.innerHTML='';
-    (state.machines||[]).forEach(m=> mBody.appendChild(machineRow(m)) );
+    (st.machines||[]).forEach(m=> mBody.appendChild(machineRow(m)) );
     sBody.innerHTML='';
-    (state.staff||[]).forEach(s=> sBody.appendChild(staffRow(s)) );
+    (st.staff||[]).forEach(s=> sBody.appendChild(staffRow(s)) );
     fBody.innerHTML='';
-    (state.fixed||[]).forEach(f=> fBody.appendChild(fixedRow(f)) );
+    (st.fixed||[]).forEach(f=> fBody.appendChild(fixedRow(f)) );
   }
 
   function compute(state){
-    // Throughput
     const processed_t = state.cap_tpd * state.op_days * (state.util_pct/100);
     const flour_t = processed_t * (state.extraction_pct/100);
     const bran_t = Math.max(processed_t - flour_t, 0);
 
-    // Revenue
     const rev_flour = flour_t * 1000 * state.flour_price;
     const rev_bran  = bran_t  * 1000 * state.bran_price;
     const rev_total = rev_flour + rev_bran;
 
-    // COGS – wheat + packaging + energy + variable
     const c_wheat = processed_t * state.wheat_price_ton;
     const c_pack  = flour_t * 1000 * state.pack_cost_perkg;
 
-    // Energy – machines
     let m_kwh_total = 0, m_cost_total = 0;
     state.machines.forEach(m=>{
       const kwh = m.kw * (m.load/100) * m.hours;
       const cost = kwh * state.power_tariff;
       m_kwh_total += kwh; m_cost_total += cost;
-    })
+    });
 
     const c_var = processed_t * state.var_cost_ton;
     const c_total = c_wheat + c_pack + m_cost_total + c_var;
 
-    // Opex – salaries + fixed + demand
     let s_total = 0; state.staff.forEach(s=> s_total += s.head * s.salary);
     let f_total = 0; state.fixed.forEach(f=> f_total += f.amt);
     const demand = state.contract_kva * state.demand_rate;
     const o_total = s_total + f_total + demand;
 
-    // Margins
     const gm = rev_total - c_total;
     const ebitda = gm - o_total;
 
-    // Per kg (flour only)
     const flour_kg = flour_t * 1000;
     const gm_perkg = flour_kg ? gm / flour_kg : 0;
     const ebitda_perkg = flour_kg ? ebitda / flour_kg : 0;
 
-    // Break-even flour price (holding other vars constant)
-    // ebitda = revenue - cogs - opex = 0
-    // revenue = P_f * flour_kg + rev_bran
-    // cogs    = c_wheat + (pack_perkg*flour_kg) + energy + var
-    // Solve for P_f:
-    // 0 = (P_f*flour_kg + rev_bran) - [c_wheat + pack*flour_kg + energy + var] - opex
-    // => P_f = { c_wheat + energy + var + opex - rev_bran } / flour_kg + pack
     let break_even = 0;
     if(flour_kg>0){
       break_even = ( (c_wheat + m_cost_total + c_var + o_total - rev_bran) / flour_kg ) + state.pack_cost_perkg;
@@ -507,11 +821,10 @@ table{width:100%; border-collapse:collapse;} thead th{position:sticky; top:0; ba
       s_total, f_total, demand, o_total,
       gm, ebitda, gm_perkg, ebitda_perkg, break_even,
       m_kwh_total, m_cost_total
-    }
+    };
   }
 
   function render(state, out){
-    // KPIs
     qs('#kpi-throughput').textContent = NUM.format(out.processed_t);
     qs('#kpi-revenue').textContent = INR.format(out.rev_total);
     qs('#kpi-cogs').textContent = INR.format(out.c_total);
@@ -523,7 +836,6 @@ table{width:100%; border-collapse:collapse;} thead th{position:sticky; top:0; ba
     qs('#kpi-gmkg').textContent = `₹ ${NUM.format(out.gm_perkg)}`;
     qs('#kpi-breakeven').textContent = `₹ ${NUM.format(out.break_even)}`;
 
-    // Results panel
     qs('#out_proc_t').value = NUM.format(out.processed_t);
     qs('#out_flour_t').value = NUM.format(out.flour_t);
     qs('#out_bran_t').value  = NUM.format(out.bran_t);
@@ -549,8 +861,6 @@ table{width:100%; border-collapse:collapse;} thead th{position:sticky; top:0; ba
     qs('#ebitda_perkg').value = `₹ ${NUM.format(out.ebitda_perkg)}`;
     qs('#breakeven_price').value = `₹ ${NUM.format(out.break_even)}`;
 
-    // Machines subtotals in table
-    // Write kWh & cost per row
     const tariff = px(qs('#power_tariff').value);
     let kwhTotal=0, costTotal=0;
     mBody.querySelectorAll('tr').forEach(tr=>{
@@ -560,30 +870,27 @@ table{width:100%; border-collapse:collapse;} thead th{position:sticky; top:0; ba
       tr.children[4].textContent = NUM.format(kwh);
       tr.children[5].textContent = INR.format(cost);
       kwhTotal += kwh; costTotal += cost;
-    })
+    });
     qs('#m_total_kwh').textContent = NUM.format(kwhTotal);
     qs('#m_total_cost').textContent = INR.format(costTotal);
 
-    // Staff total per row
     let sTotal=0;
     sBody.querySelectorAll('tr').forEach(tr=>{
       const head = px(tr.children[1].querySelector('input').value);
       const sal  = px(tr.children[2].querySelector('input').value);
       const tot = head*sal; sTotal += tot;
       tr.children[3].textContent = INR.format(tot);
-    })
+    });
     qs('#s_total').textContent = INR.format(sTotal);
 
-    // Fixed total per row
     let fTotal=0;
     fBody.querySelectorAll('tr').forEach(tr=>{
       const amt = px(tr.children[1].querySelector('input').value); fTotal += amt;
-    })
+    });
     qs('#f_total').textContent = INR.format(fTotal);
     const demand = px(qs('#contract_kva').value) * px(qs('#demand_rate').value);
     qs('#f_demand').textContent = INR.format(demand);
 
-    // Sensitivities
     const sW = px(qs('#s_wheat_pct').value)/100;
     const sF = px(qs('#s_flour_pct').value)/100;
     const outMinusW = compute({...state, wheat_price_ton: state.wheat_price_ton*(1-sW)}).ebitda;
@@ -594,51 +901,178 @@ table{width:100%; border-collapse:collapse;} thead th{position:sticky; top:0; ba
     qs('#sens_wheat_plus').textContent  = INR.format(outPlusW);
     qs('#sens_flour_minus').textContent = INR.format(outMinusF);
     qs('#sens_flour_plus').textContent  = INR.format(outPlusF);
+
+    updateScenarioTag(out);
   }
 
-  /** Recalc pipeline **/
   function recalc(){
+    if(!currentScenarioId) return;
     const state = collectState();
     const out = compute(state);
     render(state, out);
   }
 
-  /** Init **/
-  function init(){
-    const state = loadState() || defaultState();
-    setInputs(state);
+  function persistCurrentScenario(){
+    if(!currentScenarioId) return null;
+    const idx = scenarios.findIndex(s=>s.id === currentScenarioId);
+    if(idx === -1) return null;
+    const state = collectState();
+    const out = compute(state);
+    render(state, out);
+    scenarios[idx].state = cloneState(state);
+    scenarios[idx].updatedAt = Date.now();
+    saveScenarios();
+    renderScenarioDashboard();
+    updateScenarioTag(out);
+    hasUnsavedChanges = false;
+    return out;
+  }
 
-    // Event listeners for inputs
-    qsa('input').forEach(i=>{
-      i.addEventListener('input', ()=>{ recalc(); });
+  function addNewScenario(){
+    const ts = Date.now();
+    const scenario = {
+      id: newId(),
+      name: uniqueScenarioName('Scenario'),
+      state: ensureStateShape(defaultState()),
+      createdAt: ts,
+      updatedAt: ts
+    };
+    scenarios.push(scenario);
+    saveScenarios();
+    renderScenarioDashboard();
+    openScenario(scenario.id);
+  }
+
+  function duplicateScenario(id){
+    const base = scenarios.find(s=>s.id === id);
+    let sourceState = null;
+    let sourceName = base ? base.name : 'Scenario';
+    if(currentScenarioId === id){
+      sourceState = collectState();
+      const current = currentScenario();
+      if(current && current.name) sourceName = current.name;
+    }else if(base){
+      sourceState = cloneState(base.state);
+    }
+    if(!sourceState) return;
+    const ts = Date.now();
+    const scenario = {
+      id: newId(),
+      name: uniqueScenarioName(`${sourceName} Copy`),
+      state: ensureStateShape(sourceState),
+      createdAt: ts,
+      updatedAt: ts
+    };
+    scenarios.push(scenario);
+    saveScenarios();
+    renderScenarioDashboard();
+    openScenario(scenario.id);
+  }
+
+  function exportAllScenarios(){
+    if(!scenarios.length) return;
+    const header = ['Scenario','Throughput_t_per_month','Flour_t','Revenue_total','COGS_total','Opex_total','EBITDA','GM','GM_perkg','EBITDA_perkg'];
+    const lines = [header.join(',')];
+    scenarios.forEach(s=>{
+      const out = compute(s.state);
+      const row = [
+        `"${String(s.name).replace(/"/g,'""')}"`,
+        out.processed_t,
+        out.flour_t,
+        out.rev_total,
+        out.c_total,
+        out.o_total,
+        out.ebitda,
+        out.gm,
+        out.gm_perkg,
+        out.ebitda_perkg
+      ].map((val, idx)=> idx===0 ? val : String(val).replace(/,/g,''));
+      lines.push(row.join(','));
     });
+    downloadCsv('flourmill_all_scenarios.csv', lines);
+  }
 
-    // Buttons
-    qs('#add-machine').addEventListener('click', ()=>{ mBody.appendChild(machineRow({name:'New Machine', kw:1, load:80, hours:100})); recalc(); });
-    qs('#add-staff').addEventListener('click', ()=>{ sBody.appendChild(staffRow({role:'New Role', head:1, salary:15000})); recalc(); });
-    qs('#add-fixed').addEventListener('click', ()=>{ fBody.appendChild(fixedRow({item:'New Item', amt:5000})); recalc(); });
+  function bindStaticInputs(){
+    qsa('#view-detail input:not([readonly])').forEach(input=>{
+      if(input.closest('tbody')) return;
+      input.addEventListener('input', handleChange);
+    });
+  }
 
-    qs('#btn-default-hours').addEventListener('click', ()=>{
-      const days = px(qs('#op_days').value)||25; const hpd = px(qs('#hours_per_day').value)||16;
-      const defHrs = days*hpd;
-      mBody.querySelectorAll('tr').forEach(tr=>{
-        const inp = tr.children[3].querySelector('input');
-        if(inp){ inp.value = defHrs; }
-      });
-      recalc();
-    })
+  if(dashboardList){
+    dashboardList.addEventListener('click', evt=>{
+      const btn = evt.target.closest('button[data-action]');
+      if(!btn) return;
+      const id = btn.getAttribute('data-id');
+      if(!id) return;
+      if(btn.dataset.action === 'open'){
+        openScenario(id);
+      }else if(btn.dataset.action === 'duplicate'){
+        duplicateScenario(id);
+      }
+    });
+  }
 
-    qs('#btn-save').addEventListener('click', ()=>{ saveState(); const btn=qs('#btn-save'); btn.textContent='Saved ✓'; setTimeout(()=>btn.textContent='Save',1000); });
+  if(btnBack){
+    btnBack.addEventListener('click', ()=>{
+      showDashboard();
+    });
+  }
 
-    qs('#btn-reset').addEventListener('click', ()=>{
+  if(btnNewScenario){
+    btnNewScenario.addEventListener('click', ()=>{
+      addNewScenario();
+    });
+  }
+
+  if(btnExportAll){
+    btnExportAll.addEventListener('click', ()=>{
+      exportAllScenarios();
+    });
+  }
+
+  if(btnDuplicate){
+    btnDuplicate.addEventListener('click', ()=>{
+      if(!currentScenarioId) return;
+      duplicateScenario(currentScenarioId);
+    });
+  }
+
+  if(btnSave){
+    btnSave.addEventListener('click', ()=>{
+      if(!currentScenarioId) return;
+      const out = persistCurrentScenario();
+      if(out){
+        flashSavedLabel();
+      }
+    });
+  }
+
+  if(btnReset){
+    btnReset.addEventListener('click', ()=>{
+      if(!currentScenarioId) return;
       if(!confirm('Reset inputs to defaults?')) return;
-      const st = defaultState(); setInputs(st); recalc(); saveState();
-    })
+      setInputs(defaultState());
+      recalc();
+      const out = persistCurrentScenario();
+      if(out){
+        flashSavedLabel();
+      }
+    });
+  }
 
-    qs('#btn-export').addEventListener('click', ()=>{
-      const st = collectState(); const out = compute(st);
+  if(btnExport){
+    btnExport.addEventListener('click', ()=>{
+      if(!currentScenarioId) return;
+      const state = collectState();
+      const out = compute(state);
+      render(state, out);
+      const scenario = currentScenario();
       const lines = [];
-      const add=(k,v)=>lines.push(`${k},${String(v).replaceAll(',','')}`);
+      if(scenario){
+        lines.push(`Scenario,${String(scenario.name).replace(/,/g,'')}`);
+      }
+      const add=(k,v)=>lines.push(`${k},${String(v).replace(/,/g,'')}`);
       add('Throughput_t_per_month', out.processed_t);
       add('Flour_t', out.flour_t); add('Bran_t', out.bran_t);
       add('Revenue_total', out.rev_total);
@@ -647,14 +1081,59 @@ table{width:100%; border-collapse:collapse;} thead th{position:sticky; top:0; ba
       add('GM_perkg', out.gm_perkg); add('EBITDA_perkg', out.ebitda_perkg);
       add('BreakEven_flour_price_perkg', out.break_even);
       add('Energy_kWh', out.m_kwh_total); add('Energy_cost', out.c_energy);
-      const blob = new Blob([lines.join('\n')], {type:'text/csv'});
-      const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download='flourmill_monthly_summary.csv'; a.click();
-    })
+      const slug = slugify(scenario ? scenario.name : 'scenario') || 'scenario';
+      downloadCsv(`flourmill_monthly_summary_${slug}.csv`, lines);
+    });
+  }
 
-    recalc();
+  if(btnAddMachine){
+    btnAddMachine.addEventListener('click', ()=>{
+      mBody.appendChild(machineRow({name:'New Machine', kw:1, load:80, hours:100}));
+      markDirty();
+      recalc();
+    });
+  }
+
+  if(btnAddStaff){
+    btnAddStaff.addEventListener('click', ()=>{
+      sBody.appendChild(staffRow({role:'New Role', head:1, salary:15000}));
+      markDirty();
+      recalc();
+    });
+  }
+
+  if(btnAddFixed){
+    btnAddFixed.addEventListener('click', ()=>{
+      fBody.appendChild(fixedRow({item:'New Item', amt:5000}));
+      markDirty();
+      recalc();
+    });
+  }
+
+  if(btnDefaultHours){
+    btnDefaultHours.addEventListener('click', ()=>{
+      const days = px(qs('#op_days').value)||25; const hpd = px(qs('#hours_per_day').value)||16;
+      const defHrs = days*hpd;
+      mBody.querySelectorAll('tr').forEach(tr=>{
+        const inp = tr.children[3].querySelector('input');
+        if(inp){ inp.value = defHrs; }
+      });
+      markDirty();
+      recalc();
+    });
+  }
+
+  function init(){
+    bindStaticInputs();
+    scenarios = loadScenarios();
+    renderScenarioDashboard();
+    showDashboard();
+    updateDocumentTitle();
   }
 
   init();
 })();
-</script></body>
+  </script>
+</body>
+
 </html>
